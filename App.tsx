@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
@@ -71,6 +72,20 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAssignDeviceCompany = async (id: string, company: string) => {
+    // Optimistic UI update
+    setDevices(prev => prev.map(d => d.id === id ? { ...d, company } : d));
+    try {
+      await fetch('/api/devices', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, company })
+      });
+    } catch (e) {
+      console.error("Failed to update device group", e);
+    }
+  };
+
   // User Management Handlers
   const handleAddUser = (userData: Omit<User, 'id'>) => {
     const newUser: User = {
@@ -78,6 +93,14 @@ const App: React.FC = () => {
       id: Math.random().toString(36).substr(2, 9)
     };
     setUsers([...users, newUser]);
+  };
+
+  const handleUpdateUser = (updatedUser: User) => {
+    setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+    // If the currently logged in user is being updated, reflect changes immediately
+    if (currentUser && currentUser.id === updatedUser.id) {
+        setCurrentUser(updatedUser);
+    }
   };
 
   const handleDeleteUser = (id: string) => {
@@ -117,13 +140,21 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard devices={devices} />;
       case 'devices':
-        return <DeviceList devices={devices} onDeleteDevice={handleDeleteDevice} />;
+        return (
+          <DeviceList 
+            devices={devices} 
+            companies={companies}
+            onDeleteDevice={handleDeleteDevice}
+            onAssignCompany={handleAssignDeviceCompany}
+          />
+        );
       case 'users':
         return (
           <UserManagement 
             users={users} 
             companies={companies}
             onAddUser={handleAddUser}
+            onUpdateUser={handleUpdateUser}
             onDeleteUser={handleDeleteUser}
             onAddCompany={handleAddCompany}
             onDeleteCompany={handleDeleteCompany}

@@ -1,3 +1,4 @@
+
 export enum DeviceStatus {
   ONLINE = 'Online',
   OFFLINE = 'Offline',
@@ -23,6 +24,7 @@ export interface Device {
   status: DeviceStatus;
   userId: string;
   userName: string;
+  company?: string; // The group/company assignment
 }
 
 export interface FleetStats {

@@ -1,21 +1,33 @@
+
 import React, { useState } from 'react';
 import { Device } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2 } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X } from 'lucide-react';
 
 interface DeviceListProps {
   devices: Device[];
+  companies: string[];
   onDeleteDevice: (id: string) => void;
+  onAssignCompany: (id: string, company: string) => void;
 }
 
-export const DeviceList: React.FC<DeviceListProps> = ({ devices, onDeleteDevice }) => {
+export const DeviceList: React.FC<DeviceListProps> = ({ devices, companies, onDeleteDevice, onAssignCompany }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingDevice, setEditingDevice] = useState<Device | null>(null);
 
   const filteredDevices = devices.filter(d => 
     d.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
     d.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.ipAddress.includes(searchTerm)
+    d.ipAddress.includes(searchTerm) ||
+    (d.company && d.company.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const handleSaveCompany = (e: React.FormEvent) => {
+      e.preventDefault();
+      // Logic handled inside select onChange below for immediate visual feedback if preferred, 
+      // but let's stick to closing modal.
+      setEditingDevice(null);
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full animate-in slide-in-from-bottom-4 duration-500">
@@ -30,7 +42,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices, onDeleteDevice 
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
                 type="text"
-                placeholder="Search hostname, user..."
+                placeholder="Search hostname, user, group..."
                 className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-64"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -44,10 +56,10 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices, onDeleteDevice 
             <thead className="bg-slate-50 text-slate-600 font-medium">
                 <tr>
                     <th className="px-6 py-3">Hostname</th>
+                    <th className="px-6 py-3">Group / Company</th>
                     <th className="px-6 py-3">User</th>
                     <th className="px-6 py-3">OS</th>
                     <th className="px-6 py-3">App Ver.</th>
-                    <th className="px-6 py-3">IP Address</th>
                     <th className="px-6 py-3">Status</th>
                     <th className="px-6 py-3">Last Seen</th>
                     <th className="px-6 py-3 text-right">Actions</th>
@@ -57,35 +69,59 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices, onDeleteDevice 
                 {filteredDevices.map((device) => (
                     <tr key={device.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-6 py-3 font-medium text-slate-900">{device.hostname}</td>
+                        <td className="px-6 py-3">
+                            {device.company ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                    <Building2 size={10} />
+                                    {device.company}
+                                </span>
+                            ) : (
+                                <span className="text-slate-400 text-xs italic">Unassigned</span>
+                            )}
+                        </td>
                         <td className="px-6 py-3 text-slate-600">{device.userName}</td>
                         <td className="px-6 py-3">
-                            <Badge status={device.os} />
-                            <span className="ml-2 text-slate-400 text-xs">{device.osVersion}</span>
+                            <div className="flex items-center gap-2">
+                                <Badge status={device.os} />
+                                <span className="text-slate-400 text-xs hidden lg:inline">{device.osVersion}</span>
+                            </div>
                         </td>
-                        <td className="px-6 py-3 text-slate-600 flex items-center gap-1">
-                           <Hash size={12} className="text-slate-400" />
-                           {device.appVersion}
+                        <td className="px-6 py-3 text-slate-600">
+                           <div className="flex items-center gap-1">
+                                <Hash size={12} className="text-slate-400" />
+                                {device.appVersion}
+                           </div>
                         </td>
-                        <td className="px-6 py-3 font-mono text-xs text-slate-500">{device.ipAddress}</td>
                         <td className="px-6 py-3">
                             <Badge status={device.status} />
                         </td>
-                        <td className="px-6 py-3 text-slate-500 flex items-center gap-2">
-                            <Calendar size={14} className="text-slate-400"/>
-                            {new Date(device.lastSeen).toLocaleDateString()}
+                        <td className="px-6 py-3 text-slate-500">
+                            <div className="flex items-center gap-2">
+                                <Calendar size={14} className="text-slate-400"/>
+                                <span className="text-xs whitespace-nowrap">{new Date(device.lastSeen).toLocaleDateString()}</span>
+                            </div>
                         </td>
                         <td className="px-6 py-3 text-right">
-                             <button 
-                                onClick={() => {
-                                    if(confirm('Are you sure you want to remove this device?')) {
-                                        onDeleteDevice(device.id);
-                                    }
-                                }}
-                                className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Remove Device"
-                             >
-                                 <Trash2 size={16} />
-                             </button>
+                             <div className="flex justify-end gap-1">
+                                <button 
+                                    onClick={() => setEditingDevice(device)}
+                                    className="text-slate-400 hover:text-brand-600 p-1.5 hover:bg-brand-50 rounded-lg transition-colors"
+                                    title="Edit Group Assignment"
+                                >
+                                    <Edit2 size={16} />
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        if(confirm('Are you sure you want to remove this device?')) {
+                                            onDeleteDevice(device.id);
+                                        }
+                                    }}
+                                    className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Remove Device"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                             </div>
                         </td>
                     </tr>
                 ))}
@@ -102,6 +138,57 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices, onDeleteDevice 
       <div className="p-4 border-t border-slate-100 text-xs text-slate-400 bg-slate-50">
         Showing {filteredDevices.length} of {devices.length} devices
       </div>
+
+      {/* Group Assignment Modal */}
+      {editingDevice && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingDevice(null)} />
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 animate-in zoom-in-95 duration-200">
+                   <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+                       <h3 className="font-bold text-slate-800">Assign Group</h3>
+                       <button onClick={() => setEditingDevice(null)} className="text-slate-400 hover:text-slate-600">
+                           <X size={18} />
+                       </button>
+                   </div>
+                   <div className="p-6">
+                       <p className="text-sm text-slate-500 mb-4">
+                           Assign <span className="font-semibold text-slate-800">{editingDevice.hostname}</span> to a company group:
+                       </p>
+                       <div className="space-y-3">
+                           {companies.map(company => (
+                               <button
+                                   key={company}
+                                   onClick={() => {
+                                       onAssignCompany(editingDevice.id, company);
+                                       setEditingDevice(null);
+                                   }}
+                                   className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                                       editingDevice.company === company 
+                                       ? 'bg-brand-50 border-brand-200 text-brand-700 ring-1 ring-brand-200' 
+                                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                   }`}
+                               >
+                                   <Building2 size={16} />
+                                   <span className="font-medium">{company}</span>
+                                   {editingDevice.company === company && (
+                                       <span className="ml-auto text-xs bg-brand-200 text-brand-800 px-2 py-0.5 rounded-full">Current</span>
+                                   )}
+                               </button>
+                           ))}
+                           <button
+                               onClick={() => {
+                                   onAssignCompany(editingDevice.id, '');
+                                   setEditingDevice(null);
+                               }}
+                               className="w-full text-xs text-slate-400 hover:text-red-500 mt-2 py-2"
+                           >
+                               Remove from group
+                           </button>
+                       </div>
+                   </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 };
