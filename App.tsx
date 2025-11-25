@@ -167,14 +167,11 @@ const App: React.FC = () => {
           />
         );
       case 'users':
-        // Only Admins should theoretically see the user management, 
-        // but we'll leave it accessible with restrictions or just let filtering handle the data if needed.
-        // For now, if a non-admin accesses this, they just see themselves or we can block it.
-        // Let's assume for this request we just want the filtering on devices done.
         return (
           <UserManagement 
             users={users} 
             companies={companies}
+            currentUserRole={currentUser?.role}
             onAddUser={handleAddUser}
             onUpdateUser={handleUpdateUser}
             onDeleteUser={handleDeleteUser}

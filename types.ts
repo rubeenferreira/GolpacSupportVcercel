@@ -45,3 +45,17 @@ export interface User {
 }
 
 export type ViewState = 'dashboard' | 'devices' | 'users';
+
+// New Interfaces for Expanded View
+export interface AppUsageStat {
+  name: string;
+  usageMinutes: number;
+  percentage: number;
+  color: string;
+}
+
+export interface WebUsageStat {
+  domain: string;
+  visits: number;
+  category: string;
+}
