@@ -32,4 +32,14 @@ export interface FleetStats {
   criticalIssues: number;
 }
 
-export type ViewState = 'dashboard' | 'devices' | 'ai-insights' | 'settings';
+export type UserRole = 'Admin' | 'User';
+
+export interface User {
+  id: string;
+  username: string;
+  password: string; // In a real app, this would be hashed
+  role: UserRole;
+  company: string;
+}
+
+export type ViewState = 'dashboard' | 'devices' | 'users';

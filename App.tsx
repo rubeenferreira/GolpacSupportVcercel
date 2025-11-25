@@ -2,44 +2,83 @@ import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { DeviceList } from './components/DeviceList';
-import { AIAnalyst } from './components/AIAnalyst';
 import { AuthPage } from './components/AuthPage';
-import { Device, ViewState } from './types';
-import { MOCK_DEVICES } from './constants';
+import { UserManagement } from './components/UserManagement';
+import { Device, ViewState, User } from './types';
+import { INITIAL_USERS } from './constants';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
+  
+  // App State
   const [devices, setDevices] = useState<Device[]>([]);
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [loading, setLoading] = useState(true);
 
-  // Simulation of fetching data from Vercel backend
+  // Initial Data Fetch Effect
   useEffect(() => {
-    // Only fetch data if the user is authenticated
     if (!isAuthenticated) return;
 
     const fetchDevices = async () => {
-      // In a real app, this would be: await fetch('/api/devices');
-      // Here we simulate network delay
       setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
-      setDevices(MOCK_DEVICES);
-      setLoading(false);
+      try {
+        // TODO: Replace this with your actual Vercel API endpoint
+        // const response = await fetch('/api/devices', {
+        //   headers: { 'Authorization': 'Bearer YOUR_VERCEL_TOKEN' } 
+        // });
+        // const data = await response.json();
+        // setDevices(data);
+        
+        // For now, initializing with empty list as requested until API is connected
+        setDevices([]); 
+      } catch (error) {
+        console.error("Failed to fetch devices", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchDevices();
   }, [isAuthenticated]);
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
+  // Auth Handlers
+  const handleLogin = async (username: string, pass: string): Promise<boolean> => {
+    const user = users.find(u => u.username === username && u.password === pass);
+    if (user) {
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+      return true;
+    }
+    return false;
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    setCurrentUser(null);
     setDevices([]);
+    setCurrentView('dashboard');
   };
 
-  // If not authenticated, show the Portal Page
+  // User Management Handlers
+  const handleAddUser = (userData: Omit<User, 'id'>) => {
+    const newUser: User = {
+      ...userData,
+      id: Math.random().toString(36).substr(2, 9)
+    };
+    setUsers([...users, newUser]);
+  };
+
+  const handleDeleteUser = (id: string) => {
+    // Prevent deleting self if needed, or just allow it
+    if (users.length <= 1) {
+      alert("Cannot delete the last user.");
+      return;
+    }
+    setUsers(users.filter(u => u.id !== id));
+  };
+
   if (!isAuthenticated) {
     return <AuthPage onLogin={handleLogin} />;
   }
@@ -59,28 +98,39 @@ const App: React.FC = () => {
         return <Dashboard devices={devices} />;
       case 'devices':
         return <DeviceList devices={devices} />;
-      case 'ai-insights':
-        return <AIAnalyst devices={devices} />;
+      case 'users':
+        return (
+          <UserManagement 
+            users={users} 
+            onAddUser={handleAddUser}
+            onDeleteUser={handleDeleteUser}
+          />
+        );
       default:
-        return <div className="p-10 text-center">Settings view placeholder</div>;
+        return <div className="p-10 text-center">View not found</div>;
     }
   };
 
   return (
-    <Layout currentView={currentView} onChangeView={setCurrentView}>
+    <Layout 
+      currentView={currentView} 
+      onChangeView={setCurrentView}
+      currentUser={currentUser?.username}
+      onLogout={handleLogout}
+    >
       <div className="h-full flex flex-col">
-        <div className="mb-6 animate-in slide-in-from-top-4 duration-500">
-           <h1 className="text-2xl font-bold text-slate-800">
-             {currentView === 'dashboard' && 'Dashboard Overview'}
-             {currentView === 'devices' && 'Device Management'}
-             {currentView === 'ai-insights' && 'AI Fleet Analyst'}
-           </h1>
-           <p className="text-slate-500">
-             {currentView === 'dashboard' && 'Real-time metrics for your application deployments.'}
-             {currentView === 'devices' && 'View and manage all computers with the Golpac app installed.'}
-             {currentView === 'ai-insights' && 'Leverage Gemini models to analyze fleet health and generate reports.'}
-           </p>
-        </div>
+        {currentView !== 'users' && (
+          <div className="mb-6 animate-in slide-in-from-top-4 duration-500">
+             <h1 className="text-2xl font-bold text-slate-800">
+               {currentView === 'dashboard' && 'Dashboard Overview'}
+               {currentView === 'devices' && 'Device Management'}
+             </h1>
+             <p className="text-slate-500">
+               {currentView === 'dashboard' && 'Real-time metrics for your application deployments.'}
+               {currentView === 'devices' && 'View and manage all computers with the Golpac app installed.'}
+             </p>
+          </div>
+        )}
         <div className="flex-1 min-h-0">
             {renderContent()}
         </div>
