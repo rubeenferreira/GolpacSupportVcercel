@@ -135,18 +135,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
           </div>
         </div>
       </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start space-x-3">
-         <div className="mt-1 text-blue-600">
-             <Activity size={20} />
-         </div>
-         <div>
-             <h4 className="font-semibold text-blue-900">Vercel Integration Status</h4>
-             <p className="text-sm text-blue-800 mt-1">
-                 The dashboard is currently running in simulation mode using local mock data. To connect to real Vercel Serverless Functions, update the API endpoint configuration in <code>services/api.ts</code>.
-             </p>
-         </div>
-      </div>
     </div>
   );
 };

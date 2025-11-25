@@ -1,15 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@vercel/kv';
 
-// The specific origin allowed to access this API
-const ALLOWED_ORIGIN = "https://golpac-support-vcercel-ctw3c3cce.vercel.app";
-
 export default async function handler(
   request: VercelRequest,
   response: VercelResponse
 ) {
-  // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  // Allow any origin to hit the install endpoint (protected by Token anyway)
+  // This ensures your custom software/installer is never blocked by CORS
+  const origin = request.headers.origin || '*';
+
+  response.setHeader('Access-Control-Allow-Origin', origin);
   response.setHeader('Access-Control-Allow-Credentials', 'true');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   response.setHeader(

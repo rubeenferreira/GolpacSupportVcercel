@@ -1,14 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@vercel/kv';
 
-const ALLOWED_ORIGIN = "https://golpac-support-vcercel-ctw3c3cce.vercel.app";
-
 export default async function handler(
   request: VercelRequest,
   response: VercelResponse
 ) {
-  // CORS configuration
-  response.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  // Dynamic CORS: Automatically allow the requesting origin if it's a Vercel app or Localhost
+  const origin = request.headers.origin;
+  const allowedOrigin = origin && (origin.endsWith('.vercel.app') || origin.includes('localhost')) 
+    ? origin 
+    : "https://golpac-support-panel.vercel.app"; // Fallback to production domain
+
+  response.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   response.setHeader('Access-Control-Allow-Credentials', 'true');
   response.setHeader('Access-Control-Allow-Methods', 'GET, DELETE, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
