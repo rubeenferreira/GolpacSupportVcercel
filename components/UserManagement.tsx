@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
-import { MOCK_COMPANIES } from '../constants';
-import { Plus, Trash2, Shield, User as UserIcon, Building2, Search, X } from 'lucide-react';
+import { Plus, Trash2, Shield, User as UserIcon, Building2, Search, X, Briefcase } from 'lucide-react';
 
 interface UserManagementProps {
   users: User[];
+  companies: string[];
   onAddUser: (user: Omit<User, 'id'>) => void;
   onDeleteUser: (id: string) => void;
+  onAddCompany: (name: string) => void;
+  onDeleteCompany: (name: string) => void;
 }
 
-export const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onDeleteUser }) => {
+export const UserManagement: React.FC<UserManagementProps> = ({ 
+    users, 
+    companies, 
+    onAddUser, 
+    onDeleteUser,
+    onAddCompany,
+    onDeleteCompany
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Form State
@@ -18,8 +28,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser
     username: '',
     password: '',
     role: 'User' as UserRole,
-    company: MOCK_COMPANIES[0]
+    company: companies[0] || ''
   });
+
+  const [newCompany, setNewCompany] = useState('');
 
   const filteredUsers = users.filter(u => 
     u.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -35,9 +47,17 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser
         username: '',
         password: '',
         role: 'User',
-        company: MOCK_COMPANIES[0]
+        company: companies[0] || ''
       });
     }
+  };
+
+  const handleCompanySubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if(newCompany.trim()) {
+          onAddCompany(newCompany.trim());
+          setNewCompany('');
+      }
   };
 
   return (
@@ -52,13 +72,22 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser
            </h2>
            <p className="text-slate-500 text-sm">Create and manage access for admins and support staff.</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-all active:scale-95"
-        >
-          <Plus size={18} />
-          Create User
-        </button>
+        <div className="flex gap-3">
+             <button 
+                onClick={() => setIsCompanyModalOpen(true)}
+                className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-all"
+            >
+                <Briefcase size={18} />
+                Manage Companies
+            </button>
+            <button 
+                onClick={() => setIsModalOpen(true)}
+                className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-all active:scale-95"
+            >
+                <Plus size={18} />
+                Create User
+            </button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -221,7 +250,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser
                       value={newUser.company}
                       onChange={e => setNewUser({...newUser, company: e.target.value})}
                     >
-                      {MOCK_COMPANIES.map(company => (
+                      {companies.map(company => (
                         <option key={company} value={company}>{company}</option>
                       ))}
                     </select>
@@ -248,6 +277,51 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser
             </form>
           </div>
         </div>
+      )}
+
+      {/* Company Management Modal */}
+      {isCompanyModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsCompanyModalOpen(false)} />
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[80vh]">
+                  <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                      <h3 className="text-lg font-bold text-slate-800">Manage Companies</h3>
+                      <button onClick={() => setIsCompanyModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                          <X size={20} />
+                      </button>
+                  </div>
+                  
+                  <div className="p-6 flex-1 overflow-y-auto">
+                      <form onSubmit={handleCompanySubmit} className="flex gap-2 mb-6">
+                          <input 
+                              type="text" 
+                              placeholder="Add new company..."
+                              className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                              value={newCompany}
+                              onChange={e => setNewCompany(e.target.value)}
+                          />
+                          <button type="submit" disabled={!newCompany.trim()} className="bg-slate-800 text-white p-2 rounded-lg disabled:opacity-50">
+                              <Plus size={20} />
+                          </button>
+                      </form>
+
+                      <div className="space-y-2">
+                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Existing Companies</h4>
+                          {companies.map(comp => (
+                              <div key={comp} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
+                                  <span className="font-medium text-slate-700">{comp}</span>
+                                  <button 
+                                    onClick={() => onDeleteCompany(comp)}
+                                    className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                      <Trash2 size={16} />
+                                  </button>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              </div>
+          </div>
       )}
     </div>
   );

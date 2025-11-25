@@ -5,7 +5,7 @@ import { DeviceList } from './components/DeviceList';
 import { AuthPage } from './components/AuthPage';
 import { UserManagement } from './components/UserManagement';
 import { Device, ViewState, User } from './types';
-import { INITIAL_USERS } from './constants';
+import { INITIAL_USERS, MOCK_COMPANIES } from './constants';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,6 +15,7 @@ const App: React.FC = () => {
   // App State
   const [devices, setDevices] = useState<Device[]>([]);
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [companies, setCompanies] = useState<string[]>(MOCK_COMPANIES);
   const [loading, setLoading] = useState(true);
 
   // Initial Data Fetch Effect
@@ -24,15 +25,13 @@ const App: React.FC = () => {
     const fetchDevices = async () => {
       setLoading(true);
       try {
-        // TODO: Replace this with your actual Vercel API endpoint
-        // const response = await fetch('/api/devices', {
-        //   headers: { 'Authorization': 'Bearer YOUR_VERCEL_TOKEN' } 
-        // });
-        // const data = await response.json();
-        // setDevices(data);
-        
-        // For now, initializing with empty list as requested until API is connected
-        setDevices([]); 
+        const response = await fetch('/api/devices');
+        if (response.ok) {
+            const data = await response.json();
+            setDevices(data);
+        } else {
+            console.error("Failed to fetch devices");
+        }
       } catch (error) {
         console.error("Failed to fetch devices", error);
       } finally {
@@ -61,6 +60,17 @@ const App: React.FC = () => {
     setCurrentView('dashboard');
   };
 
+  // Device Management
+  const handleDeleteDevice = async (id: string) => {
+    // Optimistic UI update
+    setDevices(prev => prev.filter(d => d.id !== id));
+    try {
+        await fetch(`/api/devices?id=${id}`, { method: 'DELETE' });
+    } catch (e) {
+        console.error("Failed to delete device on server", e);
+    }
+  };
+
   // User Management Handlers
   const handleAddUser = (userData: Omit<User, 'id'>) => {
     const newUser: User = {
@@ -71,12 +81,22 @@ const App: React.FC = () => {
   };
 
   const handleDeleteUser = (id: string) => {
-    // Prevent deleting self if needed, or just allow it
     if (users.length <= 1) {
       alert("Cannot delete the last user.");
       return;
     }
     setUsers(users.filter(u => u.id !== id));
+  };
+
+  // Company Management
+  const handleAddCompany = (name: string) => {
+      if (!companies.includes(name)) {
+          setCompanies([...companies, name]);
+      }
+  };
+
+  const handleDeleteCompany = (name: string) => {
+      setCompanies(companies.filter(c => c !== name));
   };
 
   if (!isAuthenticated) {
@@ -97,13 +117,16 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard devices={devices} />;
       case 'devices':
-        return <DeviceList devices={devices} />;
+        return <DeviceList devices={devices} onDeleteDevice={handleDeleteDevice} />;
       case 'users':
         return (
           <UserManagement 
             users={users} 
+            companies={companies}
             onAddUser={handleAddUser}
             onDeleteUser={handleDeleteUser}
+            onAddCompany={handleAddCompany}
+            onDeleteCompany={handleDeleteCompany}
           />
         );
       default:

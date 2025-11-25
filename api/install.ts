@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@vercel/kv';
 
 // The specific origin allowed to access this API
 const ALLOWED_ORIGIN = "https://golpac-support-vcercel-ctw3c3cce.vercel.app";
@@ -8,7 +9,6 @@ export default async function handler(
   response: VercelResponse
 ) {
   // Set CORS headers
-  // When Credentials are set to true, Origin cannot be '*'
   response.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   response.setHeader('Access-Control-Allow-Credentials', 'true');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -27,12 +27,24 @@ export default async function handler(
   }
 
   const token = request.headers['x-install-token'];
-  // Fallback to hardcoded token if env var is missing, but prefer env var
   const validToken = process.env.INSTALL_TOKEN || 'dxTLRLGrGg3Jh2ZujTLaavsg';
 
   if (token !== validToken) {
     return response.status(401).json({ error: 'Unauthorized' });
   }
+
+  // Initialize KV client with fallback to Upstash env vars
+  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!kvUrl || !kvToken) {
+    return response.status(503).json({ error: "Database not connected. Please connect Upstash or Vercel KV." });
+  }
+
+  const kv = createClient({
+    url: kvUrl,
+    token: kvToken,
+  });
 
   try {
     const data = request.body;
@@ -42,8 +54,15 @@ export default async function handler(
         return response.status(400).json({ error: "Missing required fields (installId, hostname)" });
     }
 
-    // Log the data (In a real app, you would save this to Vercel KV or Postgres)
-    // console.log('Received install:', data);
+    // Save to Database
+    // 1. Add ID to a set of all device IDs
+    await kv.sadd('device_ids', data.installId);
+    
+    // 2. Store the device data object
+    await kv.set(`device:${data.installId}`, {
+      ...data,
+      lastSeen: new Date().toISOString()
+    });
 
     return response.status(200).json({ ok: true });
   } catch (error) {

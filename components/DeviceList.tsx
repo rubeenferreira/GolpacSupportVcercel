@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Device } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2 } from 'lucide-react';
 
 interface DeviceListProps {
   devices: Device[];
+  onDeleteDevice: (id: string) => void;
 }
 
-export const DeviceList: React.FC<DeviceListProps> = ({ devices }) => {
+export const DeviceList: React.FC<DeviceListProps> = ({ devices, onDeleteDevice }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredDevices = devices.filter(d => 
@@ -49,6 +50,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices }) => {
                     <th className="px-6 py-3">IP Address</th>
                     <th className="px-6 py-3">Status</th>
                     <th className="px-6 py-3">Last Seen</th>
+                    <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -72,11 +74,24 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices }) => {
                             <Calendar size={14} className="text-slate-400"/>
                             {new Date(device.lastSeen).toLocaleDateString()}
                         </td>
+                        <td className="px-6 py-3 text-right">
+                             <button 
+                                onClick={() => {
+                                    if(confirm('Are you sure you want to remove this device?')) {
+                                        onDeleteDevice(device.id);
+                                    }
+                                }}
+                                className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Remove Device"
+                             >
+                                 <Trash2 size={16} />
+                             </button>
+                        </td>
                     </tr>
                 ))}
                 {filteredDevices.length === 0 && (
                     <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                        <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
                             No devices found matching "{searchTerm}"
                         </td>
                     </tr>
