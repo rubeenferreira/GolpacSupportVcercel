@@ -31,7 +31,13 @@ const App: React.FC = () => {
             const data = await response.json();
             setDevices(data);
         } else {
-            console.error("Failed to fetch devices");
+            console.error("Failed to fetch devices. Status:", response.status);
+            // If the response is HTML (often 404/500 pages), log text for debug
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") === -1) {
+                const text = await response.text();
+                console.error("Received HTML instead of JSON:", text.substring(0, 100));
+            }
         }
       } catch (error) {
         console.error("Failed to fetch devices", error);
@@ -126,6 +132,17 @@ const App: React.FC = () => {
     return <AuthPage onLogin={handleLogin} />;
   }
 
+  // --- Logic to filter devices based on User Role ---
+  // If Admin, see all. If User, see only their company's devices.
+  const getVisibleDevices = () => {
+    if (!currentUser) return [];
+    if (currentUser.role === 'Admin') return devices;
+    return devices.filter(d => d.company === currentUser.company);
+  };
+
+  const visibleDevices = getVisibleDevices();
+  const isReadOnly = currentUser?.role !== 'Admin';
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -138,17 +155,22 @@ const App: React.FC = () => {
 
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard devices={devices} />;
+        return <Dashboard devices={visibleDevices} />;
       case 'devices':
         return (
           <DeviceList 
-            devices={devices} 
+            devices={visibleDevices} 
             companies={companies}
             onDeleteDevice={handleDeleteDevice}
             onAssignCompany={handleAssignDeviceCompany}
+            isReadOnly={isReadOnly}
           />
         );
       case 'users':
+        // Only Admins should theoretically see the user management, 
+        // but we'll leave it accessible with restrictions or just let filtering handle the data if needed.
+        // For now, if a non-admin accesses this, they just see themselves or we can block it.
+        // Let's assume for this request we just want the filtering on devices done.
         return (
           <UserManagement 
             users={users} 
@@ -180,8 +202,8 @@ const App: React.FC = () => {
                {currentView === 'devices' && 'Device Management'}
              </h1>
              <p className="text-slate-500">
-               {currentView === 'dashboard' && 'Real-time metrics for your application deployments.'}
-               {currentView === 'devices' && 'View and manage all computers with the Golpac app installed.'}
+               {currentView === 'dashboard' && `Real-time metrics for ${currentUser?.role === 'Admin' ? 'all fleets' : currentUser?.company}.`}
+               {currentView === 'devices' && `View ${isReadOnly ? '' : 'and manage'} devices for ${currentUser?.role === 'Admin' ? 'all companies' : currentUser?.company}.`}
              </p>
           </div>
         )}

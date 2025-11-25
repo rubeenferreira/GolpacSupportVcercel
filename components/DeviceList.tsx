@@ -2,16 +2,23 @@
 import React, { useState } from 'react';
 import { Device } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, Lock } from 'lucide-react';
 
 interface DeviceListProps {
   devices: Device[];
   companies: string[];
   onDeleteDevice: (id: string) => void;
   onAssignCompany: (id: string, company: string) => void;
+  isReadOnly?: boolean;
 }
 
-export const DeviceList: React.FC<DeviceListProps> = ({ devices, companies, onDeleteDevice, onAssignCompany }) => {
+export const DeviceList: React.FC<DeviceListProps> = ({ 
+    devices, 
+    companies, 
+    onDeleteDevice, 
+    onAssignCompany, 
+    isReadOnly = false 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
 
@@ -22,13 +29,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices, companies, onDe
     (d.company && d.company.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleSaveCompany = (e: React.FormEvent) => {
-      e.preventDefault();
-      // Logic handled inside select onChange below for immediate visual feedback if preferred, 
-      // but let's stick to closing modal.
-      setEditingDevice(null);
-  };
-
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full animate-in slide-in-from-bottom-4 duration-500">
       
@@ -36,13 +36,13 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices, companies, onDe
       <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <Monitor size={20} className="text-slate-500"/>
-            All Devices
+            {isReadOnly ? 'Assigned Devices' : 'All Devices'}
         </h2>
         <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
                 type="text"
-                placeholder="Search hostname, user, group..."
+                placeholder="Search hostname, user..."
                 className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-64"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -62,7 +62,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices, companies, onDe
                     <th className="px-6 py-3">App Ver.</th>
                     <th className="px-6 py-3">Status</th>
                     <th className="px-6 py-3">Last Seen</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
+                    {!isReadOnly && <th className="px-6 py-3 text-right">Actions</th>}
                 </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -101,34 +101,38 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices, companies, onDe
                                 <span className="text-xs whitespace-nowrap">{new Date(device.lastSeen).toLocaleDateString()}</span>
                             </div>
                         </td>
-                        <td className="px-6 py-3 text-right">
-                             <div className="flex justify-end gap-1">
-                                <button 
-                                    onClick={() => setEditingDevice(device)}
-                                    className="text-slate-400 hover:text-brand-600 p-1.5 hover:bg-brand-50 rounded-lg transition-colors"
-                                    title="Edit Group Assignment"
-                                >
-                                    <Edit2 size={16} />
-                                </button>
-                                <button 
-                                    onClick={() => {
-                                        if(confirm('Are you sure you want to remove this device?')) {
-                                            onDeleteDevice(device.id);
-                                        }
-                                    }}
-                                    className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Remove Device"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                             </div>
-                        </td>
+                        {!isReadOnly && (
+                            <td className="px-6 py-3 text-right">
+                                 <div className="flex justify-end gap-1">
+                                    <button 
+                                        onClick={() => setEditingDevice(device)}
+                                        className="text-slate-400 hover:text-brand-600 p-1.5 hover:bg-brand-50 rounded-lg transition-colors"
+                                        title="Edit Group Assignment"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            if(confirm('Are you sure you want to remove this device?')) {
+                                                onDeleteDevice(device.id);
+                                            }
+                                        }}
+                                        className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Remove Device"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                 </div>
+                            </td>
+                        )}
                     </tr>
                 ))}
                 {filteredDevices.length === 0 && (
                     <tr>
-                        <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
-                            No devices found matching "{searchTerm}"
+                        <td colSpan={isReadOnly ? 7 : 8} className="px-6 py-12 text-center text-slate-400">
+                            {devices.length === 0 
+                                ? "No devices found assigned to your company." 
+                                : `No devices found matching "${searchTerm}"`}
                         </td>
                     </tr>
                 )}
@@ -139,8 +143,8 @@ export const DeviceList: React.FC<DeviceListProps> = ({ devices, companies, onDe
         Showing {filteredDevices.length} of {devices.length} devices
       </div>
 
-      {/* Group Assignment Modal */}
-      {editingDevice && (
+      {/* Group Assignment Modal - Only renders if not read only (redundant check but safe) */}
+      {!isReadOnly && editingDevice && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingDevice(null)} />
               <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 animate-in zoom-in-95 duration-200">
