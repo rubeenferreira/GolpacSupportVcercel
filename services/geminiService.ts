@@ -9,6 +9,11 @@ export interface AnalysisResult {
   sources: { title: string; uri: string }[];
 }
 
+export interface ChatResponse {
+  text: string;
+  sources: { title: string; uri: string }[];
+}
+
 export const analyzeFleetHealth = async (devices: Device[]): Promise<AnalysisResult> => {
   try {
     const deviceSummary = devices.map(d => 
@@ -61,7 +66,7 @@ export const analyzeFleetHealth = async (devices: Device[]): Promise<AnalysisRes
   }
 };
 
-export const askSupportChat = async (history: {role: 'user' | 'model', text: string}[], newMessage: string, devices: Device[]): Promise<string> => {
+export const askSupportChat = async (history: {role: 'user' | 'model', text: string}[], newMessage: string, devices: Device[]): Promise<ChatResponse> => {
   try {
      // We inject the context dynamically
      const context = `Current Fleet Context: ${JSON.stringify(devices.map(d => ({ host: d.hostname, status: d.status, ver: d.appVersion })))}`;
@@ -79,10 +84,25 @@ export const askSupportChat = async (history: {role: 'user' | 'model', text: str
      });
 
      const result = await chat.sendMessage({ message: newMessage });
-     return result.text || "I didn't understand that.";
+     
+     // Extract sources for chat as well
+     const rawSources = result.candidates?.[0]?.groundingMetadata?.groundingChunks
+      ?.map(chunk => chunk.web)
+      .filter(web => web && web.uri && web.title) || [];
+    
+     const uniqueSources = Array.from(new Map(rawSources.map(s => [s!.uri, s])).values())
+      .map(s => ({ title: s!.title!, uri: s!.uri! }));
+
+     return {
+       text: result.text || "I didn't understand that.",
+       sources: uniqueSources
+     };
 
   } catch (error) {
     console.error("Chat Failed:", error);
-    return "Sorry, I encountered an error processing your request.";
+    return {
+      text: "Sorry, I encountered an error processing your request.",
+      sources: []
+    };
   }
 }

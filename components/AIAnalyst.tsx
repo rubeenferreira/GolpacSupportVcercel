@@ -7,11 +7,17 @@ interface AIAnalystProps {
   devices: Device[];
 }
 
+interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+  sources?: { title: string; uri: string }[];
+}
+
 export const AIAnalyst: React.FC<AIAnalystProps> = ({ devices }) => {
   const [reportData, setReportData] = useState<AnalysisResult | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   
-  const [chatHistory, setChatHistory] = useState<{role: 'user' | 'model', text: string}[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [loadingChat, setLoadingChat] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -34,7 +40,11 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ devices }) => {
 
     const response = await askSupportChat(chatHistory, userMsg, devices);
     
-    setChatHistory(prev => [...prev, { role: 'model', text: response }]);
+    setChatHistory(prev => [...prev, { 
+      role: 'model', 
+      text: response.text,
+      sources: response.sources
+    }]);
     setLoadingChat(false);
   };
 
@@ -132,7 +142,7 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ devices }) => {
                 </div>
             )}
             {chatHistory.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
                         msg.role === 'user' 
                         ? 'bg-blue-600 text-white rounded-br-none' 
@@ -140,6 +150,21 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ devices }) => {
                     }`}>
                         {msg.text}
                     </div>
+                    {msg.sources && msg.sources.length > 0 && (
+                        <div className="mt-2 ml-2 max-w-[80%] bg-white/50 border border-slate-100 rounded-lg p-2 text-xs">
+                             <div className="flex items-center gap-1 text-slate-500 mb-1 font-semibold">
+                                <Globe size={10} />
+                                <span>Sources</span>
+                             </div>
+                             <div className="space-y-1">
+                                {msg.sources.map((s, i) => (
+                                    <a key={i} href={s.uri} target="_blank" rel="noreferrer" className="block text-blue-600 hover:underline truncate">
+                                        {s.title}
+                                    </a>
+                                ))}
+                             </div>
+                        </div>
+                    )}
                 </div>
             ))}
             {loadingChat && (
