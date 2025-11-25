@@ -120,7 +120,9 @@ export default async function handler(
             status: status, 
             userId: data.userId || data.installId.substring(0, 5),
             userName: data.userName || 'System User',
-            company: data.company || '' // Return the stored company
+            company: data.company || '', // Return the stored company
+            appUsage: data.appUsage || [], // Pass through usage data
+            webUsage: data.webUsage || []  // Pass through usage data
         };
     })
     .filter(Boolean)
