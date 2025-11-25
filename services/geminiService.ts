@@ -1,8 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { Device } from "../types";
 
-// Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get AI instance safely
+const getAI = () => {
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+};
 
 export interface AnalysisResult {
   markdown: string;
@@ -16,6 +18,7 @@ export interface ChatResponse {
 
 export const analyzeFleetHealth = async (devices: Device[]): Promise<AnalysisResult> => {
   try {
+    const ai = getAI();
     const deviceSummary = devices.map(d => 
       `- ${d.hostname} (${d.os} ${d.osVersion}): App v${d.appVersion}, Status: ${d.status}, Last Seen: ${d.lastSeen}`
     ).join('\n');
@@ -60,7 +63,7 @@ export const analyzeFleetHealth = async (devices: Device[]): Promise<AnalysisRes
   } catch (error) {
     console.error("Gemini Analysis Failed:", error);
     return { 
-      markdown: "Error generating report. Please ensure your API key is valid and you have quota available.", 
+      markdown: "Error generating report. Please ensure your API_KEY environment variable is set in Vercel.", 
       sources: [] 
     };
   }
@@ -68,6 +71,7 @@ export const analyzeFleetHealth = async (devices: Device[]): Promise<AnalysisRes
 
 export const askSupportChat = async (history: {role: 'user' | 'model', text: string}[], newMessage: string, devices: Device[]): Promise<ChatResponse> => {
   try {
+     const ai = getAI();
      // We inject the context dynamically
      const context = `Current Fleet Context: ${JSON.stringify(devices.map(d => ({ host: d.hostname, status: d.status, ver: d.appVersion })))}`;
      
@@ -101,7 +105,7 @@ export const askSupportChat = async (history: {role: 'user' | 'model', text: str
   } catch (error) {
     console.error("Chat Failed:", error);
     return {
-      text: "Sorry, I encountered an error processing your request.",
+      text: "Sorry, I encountered an error processing your request. Please check your API configuration.",
       sources: []
     };
   }
