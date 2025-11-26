@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -10,6 +10,7 @@ interface DeviceListProps {
   companies: string[];
   onDeleteDevice: (id: string) => void;
   onAssignCompany: (id: string, company: string) => void;
+  onRefreshData: () => Promise<void>;
   isReadOnly?: boolean;
 }
 
@@ -44,8 +45,9 @@ const generateMockData = (os: string, dateRange: string) => {
 
 const COLORS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#f97316', '#64748b'];
 
-const ExpandedDeviceView: React.FC<{ device: Device }> = ({ device }) => {
+const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<void> }> = ({ device, onRefresh }) => {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     
     // Logic to determine if we have real data or should simulate
     const hasRealData = (device.appUsage && device.appUsage.length > 0) || (device.webUsage && device.webUsage.length > 0);
@@ -65,6 +67,13 @@ const ExpandedDeviceView: React.FC<{ device: Device }> = ({ device }) => {
         }
     }, [device, date, hasRealData]);
 
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        await onRefresh();
+        // Artificial delay for UX visibility
+        setTimeout(() => setIsRefreshing(false), 500);
+    };
+
     return (
         <div className="bg-slate-50 p-6 border-t border-slate-100 shadow-inner animate-in slide-in-from-top-2 duration-300">
             
@@ -81,8 +90,17 @@ const ExpandedDeviceView: React.FC<{ device: Device }> = ({ device }) => {
                 </div>
                 
                 <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
-                    <Calendar size={16} className="text-slate-400 ml-2" />
-                    <span className="text-xs font-medium text-slate-600">Date:</span>
+                    <button 
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        className={`p-1.5 rounded-md transition-all duration-300 ${isRefreshing ? 'text-brand-500 rotate-180' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-50'}`}
+                        title="Refresh Analytics"
+                    >
+                        <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+                    </button>
+                    <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                    <Calendar size={16} className="text-slate-400" />
+                    <span className="text-xs font-medium text-slate-600 hidden sm:inline">Date:</span>
                     <input 
                         type="date" 
                         value={date}
@@ -207,6 +225,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     companies, 
     onDeleteDevice, 
     onAssignCompany, 
+    onRefreshData,
     isReadOnly = false 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -361,7 +380,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                         {expandedDeviceId === device.id && (
                             <tr>
                                 <td colSpan={isReadOnly ? 8 : 9} className="p-0">
-                                    <ExpandedDeviceView device={device} />
+                                    <ExpandedDeviceView device={device} onRefresh={onRefreshData} />
                                 </td>
                             </tr>
                         )}

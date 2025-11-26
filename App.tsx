@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { DeviceList } from './components/DeviceList';
@@ -22,37 +22,37 @@ const App: React.FC = () => {
   // Determine API Base URL
   // If running locally (Vite), point to the production Vercel API.
   // If running on Vercel, use relative path.
-  const API_BASE = process.env.NODE_ENV === 'development' ? 'https://golpac-support-panel.vercel.app' : '';
+  // Updated to match your specific Vercel project name
+  const API_BASE = process.env.NODE_ENV === 'development' ? 'https://golpac-support-vcercel.vercel.app' : '';
+
+  const fetchDevices = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/devices`);
+      if (response.ok) {
+          const data = await response.json();
+          setDevices(data);
+      } else {
+          console.error("Failed to fetch devices. Status:", response.status);
+          // If the response is HTML (often 404/500 pages), log text for debug
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") === -1) {
+              const text = await response.text();
+              console.error("Received HTML instead of JSON:", text.substring(0, 100));
+          }
+      }
+    } catch (error) {
+      console.error("Failed to fetch devices", error);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, [API_BASE]);
 
   // Initial Data Fetch Effect
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    const fetchDevices = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(`${API_BASE}/api/devices`);
-        if (response.ok) {
-            const data = await response.json();
-            setDevices(data);
-        } else {
-            console.error("Failed to fetch devices. Status:", response.status);
-            // If the response is HTML (often 404/500 pages), log text for debug
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") === -1) {
-                const text = await response.text();
-                console.error("Received HTML instead of JSON:", text.substring(0, 100));
-            }
-        }
-      } catch (error) {
-        console.error("Failed to fetch devices", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDevices();
-  }, [isAuthenticated, API_BASE]);
+    fetchDevices(true);
+  }, [isAuthenticated, fetchDevices]);
 
   // Auth Handlers
   const handleLogin = async (username: string, pass: string): Promise<boolean> => {
@@ -168,6 +168,7 @@ const App: React.FC = () => {
             companies={companies}
             onDeleteDevice={handleDeleteDevice}
             onAssignCompany={handleAssignDeviceCompany}
+            onRefreshData={() => fetchDevices(false)}
             isReadOnly={isReadOnly}
           />
         );
