@@ -52,7 +52,7 @@ const generateMockData = (os: string, dateRange: string) => {
   return { apps, websites };
 };
 
-const COLORS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#f97316', '#64748b'];
+const COLORS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#f97316', '#64748b', '#22c55e', '#a855f7'];
 
 const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<void> }> = ({ device, onRefresh }) => {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -65,13 +65,19 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
     const { apps, websites } = useMemo(() => {
         if (hasRealData) {
             // Process App Usage
-            let realApps = (device.appUsage || []).map((app, idx) => ({
+            let realApps = [...(device.appUsage || [])];
+
+            // 1. Sort by usage (descending) so most used apps come first
+            realApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
+
+            // 2. Assign colors based on RANKING, ensuring diversity.
+            // We intentionally ignore any 'color' sent by the API to guarantee the UI looks correct.
+            realApps = realApps.map((app, idx) => ({
                 ...app,
-                // Assign color if missing
-                color: app.color || COLORS[idx % COLORS.length]
+                color: COLORS[idx % COLORS.length]
             }));
 
-            // Auto-calculate percentages if the installer didn't send them
+            // 3. Auto-calculate percentages if the installer didn't send them
             const totalMinutes = realApps.reduce((sum, item) => sum + (item.usageMinutes || 0), 0);
             if (totalMinutes > 0) {
                 realApps = realApps.map(app => ({
@@ -80,9 +86,6 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     percentage: app.percentage || Math.round((app.usageMinutes / totalMinutes) * 100)
                 }));
             }
-
-            // Sort by usage (desc)
-            realApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
 
             const realWebs = device.webUsage || [];
             return { apps: realApps, websites: realWebs };
