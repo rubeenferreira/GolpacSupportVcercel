@@ -92,33 +92,33 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-4">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-           <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+           <h2 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
              <Shield className="text-brand-600" />
              User Management
            </h2>
            <p className="text-slate-500 text-sm">
-             {isAdmin ? 'Create and manage access for admins and support staff.' : 'View users and update your profile.'}
+             {isAdmin ? 'Manage system access.' : 'View your profile.'}
            </p>
         </div>
         {isAdmin && (
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2">
                  <button 
                     onClick={() => setIsCompanyModalOpen(true)}
-                    className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-all"
+                    className="flex-1 sm:flex-none justify-center bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-all text-sm"
                 >
-                    <Briefcase size={18} />
-                    Manage Companies
+                    <Briefcase size={16} />
+                    Manage Groups
                 </button>
                 <button 
                     onClick={handleOpenCreate}
-                    className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-all active:scale-95"
+                    className="flex-1 sm:flex-none justify-center bg-brand-600 hover:bg-brand-700 text-white px-3 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-all active:scale-95 text-sm"
                 >
-                    <Plus size={18} />
+                    <Plus size={16} />
                     Create User
                 </button>
             </div>
@@ -140,8 +140,55 @@ export const UserManagement: React.FC<UserManagementProps> = ({
            />
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* MOBILE CARD VIEW */}
+        <div className="block md:hidden bg-slate-50/50 p-4 space-y-3">
+             {filteredUsers.map(user => (
+                 <div key={user.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                            user.role === 'Admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {user.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                              <p className="font-bold text-slate-800">{user.username}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                                      user.role === 'Admin' 
+                                        ? 'bg-purple-50 text-purple-700 border-purple-100' 
+                                        : 'bg-blue-50 text-blue-700 border-blue-100'
+                                    }`}>
+                                      {user.role}
+                                  </span>
+                                  <span className="text-xs text-slate-500 truncate max-w-[100px]">{user.company}</span>
+                              </div>
+                          </div>
+                     </div>
+                     <div className="flex gap-1">
+                        <button 
+                            onClick={() => handleOpenEdit(user)}
+                            className="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-lg"
+                        >
+                            <Edit2 size={18} />
+                        </button>
+                        {isAdmin && (
+                            <button 
+                                onClick={() => onDeleteUser(user.id)}
+                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
+                     </div>
+                 </div>
+             ))}
+             {filteredUsers.length === 0 && (
+                 <div className="text-center py-8 text-slate-400 text-sm">No users found.</div>
+             )}
+        </div>
+
+        {/* DESKTOP TABLE VIEW */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-100">
               <tr>

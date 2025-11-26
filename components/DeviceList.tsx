@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -15,7 +15,8 @@ interface DeviceListProps {
 
 // Helper to format decimal minutes into H m s
 const formatDuration = (minutes: number) => {
-  const totalSeconds = Math.round(minutes * 60);
+  const safeMinutes = Number(minutes) || 0;
+  const totalSeconds = Math.round(safeMinutes * 60);
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
@@ -90,26 +91,25 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
     const handleRefresh = async () => {
         setIsRefreshing(true);
         await onRefresh();
-        // Artificial delay for UX visibility
         setTimeout(() => setIsRefreshing(false), 500);
     };
 
     return (
-        <div className="bg-slate-50 p-6 border-t border-slate-100 shadow-inner animate-in slide-in-from-top-2 duration-300">
+        <div className="bg-slate-50 p-4 md:p-6 border-t border-slate-100 shadow-inner animate-in slide-in-from-top-2 duration-300">
             
             {/* Controls Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
-                    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                    <h3 className="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
                         <LayoutGrid size={16} className="text-brand-500"/>
                         Usage Analytics
                     </h3>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-[10px] md:text-xs text-slate-500">
                         {hasRealData ? 'Live reported data' : `Simulated report for ${device.hostname}`}
                     </p>
                 </div>
                 
-                <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm self-end sm:self-auto">
                     <button 
                         onClick={handleRefresh}
                         disabled={isRefreshing}
@@ -125,7 +125,6 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                         type="date" 
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
-                        // If we have real data, we disable date picking for now as we only show latest snapshot
                         disabled={hasRealData} 
                         className={`text-sm text-slate-700 focus:outline-none border-none bg-transparent ${hasRealData ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
@@ -135,22 +134,22 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 {/* App Usage Chart */}
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h4 className="font-semibold text-sm md:text-base text-slate-800 mb-4 flex items-center gap-2">
                         <PieChartIcon size={18} className="text-purple-500" />
-                        Most Used Apps (Duration)
+                        Most Used Apps
                     </h4>
                     {apps.length > 0 ? (
                     <div className="flex flex-col sm:flex-row items-center gap-6">
-                        <div className="h-48 w-48 shrink-0">
+                        <div className="h-40 w-40 md:h-48 md:w-48 shrink-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={apps}
+                                        data={apps as any[]}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={40}
-                                        outerRadius={70}
+                                        innerRadius={35}
+                                        outerRadius={60}
                                         paddingAngle={5}
                                         dataKey="percentage"
                                     >
@@ -164,17 +163,17 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                         </div>
                         <div className="flex-1 w-full">
                             <ul className="space-y-3">
-                                {apps.map((app, idx) => (
-                                    <li key={idx} className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: app.color }} />
-                                            <span className="font-medium text-slate-700">{app.name}</span>
+                                {apps.slice(0, 5).map((app, idx) => (
+                                    <li key={idx} className="flex items-center justify-between text-xs md:text-sm">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: app.color }} />
+                                            <span className="font-medium text-slate-700 truncate max-w-[100px] sm:max-w-none">{app.name}</span>
                                         </div>
-                                        <div className="flex items-center gap-4 text-slate-500">
-                                            <span className="text-xs flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded tabular-nums">
+                                        <div className="flex items-center gap-2 md:gap-4 text-slate-500">
+                                            <span className="text-[10px] md:text-xs flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded tabular-nums">
                                                 <Clock size={10} /> {formatDuration(app.usageMinutes)}
                                             </span>
-                                            <span className="font-bold w-12 text-right">{app.percentage.toFixed(0)}%</span>
+                                            <span className="font-bold w-10 text-right">{app.percentage.toFixed(0)}%</span>
                                         </div>
                                     </li>
                                 ))}
@@ -189,8 +188,8 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                 </div>
 
                 {/* Web Usage List */}
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h4 className="font-semibold text-sm md:text-base text-slate-800 mb-4 flex items-center gap-2">
                         <Globe size={18} className="text-blue-500" />
                         Most Viewed Websites
                     </h4>
@@ -200,27 +199,21 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                             <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
                                 <tr>
                                     <th className="px-3 py-2">Domain</th>
-                                    <th className="px-3 py-2">Category</th>
                                     <th className="px-3 py-2 text-right">Visits</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {websites.map((site, idx) => (
+                                {websites.slice(0, 6).map((site, idx) => (
                                     <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-3 py-3 font-medium text-slate-700 flex items-center gap-2">
+                                        <td className="px-3 py-2.5 font-medium text-slate-700 flex items-center gap-2 max-w-[150px] truncate">
                                             <img 
                                                 src={`https://www.google.com/s2/favicons?domain=${site.domain}&sz=32`} 
                                                 alt="" 
-                                                className="w-4 h-4 opacity-70"
+                                                className="w-4 h-4 opacity-70 shrink-0"
                                             />
-                                            {site.domain}
+                                            <span className="truncate">{site.domain}</span>
                                         </td>
-                                        <td className="px-3 py-3">
-                                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                                                {site.category || 'General'}
-                                            </span>
-                                        </td>
-                                        <td className="px-3 py-3 text-right font-mono text-slate-600">
+                                        <td className="px-3 py-2.5 text-right font-mono text-slate-600">
                                             {site.visits}
                                         </td>
                                     </tr>
@@ -272,22 +265,24 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full animate-in slide-in-from-bottom-4 duration-500">
       
       {/* Header & Filter */}
-      <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <Monitor size={20} className="text-slate-500"/>
-            {isReadOnly ? 'Assigned Devices' : 'All Devices'}
-        </h2>
+      <div className="p-4 border-b border-slate-100 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Monitor size={20} className="text-slate-500"/>
+                {isReadOnly ? 'Assigned Devices' : 'All Devices'}
+            </h2>
+        </div>
         
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3">
             {/* Company Filter Dropdown */}
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Filter size={16} className="text-slate-400" />
                 </div>
                 <select
                     value={selectedCompanyFilter}
                     onChange={(e) => setSelectedCompanyFilter(e.target.value)}
-                    className="pl-9 pr-8 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-48 appearance-none bg-white text-slate-700"
+                    className="pl-9 pr-8 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-48 appearance-none bg-white text-slate-700"
                 >
                     <option value="">All Companies</option>
                     {companies.map(c => (
@@ -300,12 +295,12 @@ export const DeviceList: React.FC<DeviceListProps> = ({
             </div>
 
             {/* Search Input */}
-            <div className="relative">
+            <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <input 
                     type="text"
                     placeholder="Search hostname, user..."
-                    className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-64"
+                    className="pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 w-full"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -313,8 +308,88 @@ export const DeviceList: React.FC<DeviceListProps> = ({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* MOBILE CARD VIEW (Visible only on small screens) */}
+      <div className="block md:hidden bg-slate-50/50 p-4 space-y-3">
+          {filteredDevices.map(device => (
+              <div key={device.id} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                  <div 
+                    className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50"
+                    onClick={() => toggleExpand(device.id)}
+                  >
+                      <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-800">{device.hostname}</span>
+                              <Badge status={device.status} />
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-slate-500">
+                              <span className="flex items-center gap-1">
+                                  <UserIcon size={12} /> {device.userName}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                  {device.os} {device.osVersion}
+                              </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
+                             <Building2 size={10} />
+                             {device.company || 'Unassigned'}
+                          </div>
+                      </div>
+                      <div className="text-slate-400">
+                          {expandedDeviceId === device.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </div>
+                  </div>
+                  
+                  {/* Actions Bar for Mobile Card */}
+                  {!isReadOnly && expandedDeviceId !== device.id && (
+                      <div className="border-t border-slate-100 flex divide-x divide-slate-100">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setEditingDevice(device); }}
+                            className="flex-1 py-3 text-xs font-medium text-slate-600 flex items-center justify-center gap-2 hover:bg-slate-50"
+                          >
+                              <Edit2 size={14} /> Assign Group
+                          </button>
+                          <button 
+                             onClick={(e) => { 
+                                 e.stopPropagation(); 
+                                 if(confirm('Are you sure you want to remove this device?')) onDeleteDevice(device.id); 
+                             }}
+                             className="flex-1 py-3 text-xs font-medium text-red-500 flex items-center justify-center gap-2 hover:bg-red-50"
+                          >
+                              <Trash2 size={14} /> Remove
+                          </button>
+                      </div>
+                  )}
+
+                  {expandedDeviceId === device.id && (
+                      <div className="border-t border-slate-100">
+                           <ExpandedDeviceView device={device} onRefresh={onRefreshData} />
+                           {!isReadOnly && (
+                               <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+                                   <button 
+                                      onClick={() => setEditingDevice(device)}
+                                      className="flex-1 bg-white border border-slate-200 py-2 rounded-lg text-sm font-medium text-slate-700 shadow-sm"
+                                    >
+                                       Edit Group
+                                   </button>
+                                   <button 
+                                      onClick={() => { if(confirm('Delete?')) onDeleteDevice(device.id); }}
+                                      className="flex-1 bg-red-50 border border-red-200 py-2 rounded-lg text-sm font-medium text-red-600 shadow-sm"
+                                    >
+                                       Remove
+                                   </button>
+                               </div>
+                           )}
+                      </div>
+                  )}
+              </div>
+          ))}
+          {filteredDevices.length === 0 && (
+              <div className="text-center py-10 text-slate-400 text-sm">No devices found.</div>
+          )}
+      </div>
+
+      {/* DESKTOP TABLE VIEW (Hidden on mobile) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-600 font-medium">
                 <tr>
@@ -418,11 +493,11 @@ export const DeviceList: React.FC<DeviceListProps> = ({
             </tbody>
         </table>
       </div>
-      <div className="p-4 border-t border-slate-100 text-xs text-slate-400 bg-slate-50">
+      <div className="hidden md:block p-4 border-t border-slate-100 text-xs text-slate-400 bg-slate-50">
         Showing {filteredDevices.length} of {devices.length} devices
       </div>
 
-      {/* Group Assignment Modal */}
+      {/* Group Assignment Modal (Responsive) */}
       {!isReadOnly && editingDevice && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingDevice(null)} />

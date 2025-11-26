@@ -44,55 +44,56 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-4">
+      {/* KPI Grid: Changed to grid-cols-2 for mobile to see more data at once */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {/* KPI Cards */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-medium text-slate-500">Total Installs</p>
-            <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+            <p className="text-xs md:text-sm font-medium text-slate-500">Total Installs</p>
+            <p className="text-xl md:text-2xl font-bold text-slate-900">{stats.total}</p>
           </div>
-          <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
-            <Server size={24} />
+          <div className="p-2 md:p-3 bg-blue-50 rounded-lg text-blue-600 self-end md:self-auto">
+            <Server size={20} className="md:w-6 md:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-medium text-slate-500">Active Online</p>
-            <p className="text-2xl font-bold text-green-600">{stats.online}</p>
+            <p className="text-xs md:text-sm font-medium text-slate-500">Active Online</p>
+            <p className="text-xl md:text-2xl font-bold text-green-600">{stats.online}</p>
           </div>
-          <div className="p-3 bg-green-50 rounded-lg text-green-600">
-            <Activity size={24} />
+          <div className="p-2 md:p-3 bg-green-50 rounded-lg text-green-600 self-end md:self-auto">
+            <Activity size={20} className="md:w-6 md:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-medium text-slate-500">Critical Issues</p>
-            <p className="text-2xl font-bold text-red-600">{stats.critical}</p>
+            <p className="text-xs md:text-sm font-medium text-slate-500">Critical Issues</p>
+            <p className="text-xl md:text-2xl font-bold text-red-600">{stats.critical}</p>
           </div>
-          <div className="p-3 bg-red-50 rounded-lg text-red-600">
-            <AlertTriangle size={24} />
+          <div className="p-2 md:p-3 bg-red-50 rounded-lg text-red-600 self-end md:self-auto">
+            <AlertTriangle size={20} className="md:w-6 md:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-medium text-slate-500">Outdated Vers.</p>
-            <p className="text-2xl font-bold text-orange-600">{stats.outdated}</p>
+            <p className="text-xs md:text-sm font-medium text-slate-500">Outdated Vers.</p>
+            <p className="text-xl md:text-2xl font-bold text-orange-600">{stats.outdated}</p>
           </div>
-          <div className="p-3 bg-orange-50 rounded-lg text-orange-600">
-            <ShieldCheck size={24} />
+          <div className="p-2 md:p-3 bg-orange-50 rounded-lg text-orange-600 self-end md:self-auto">
+            <ShieldCheck size={20} className="md:w-6 md:h-6" />
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Charts */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Operating System Distribution</h3>
-          <div className="h-64">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-4">Operating System Distribution</h3>
+          <div className="h-56 md:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -110,20 +111,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend />
+                <Legend iconType="circle" />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Device Status Overview</h3>
-           <div className="h-64">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-4">Device Status Overview</h3>
+           <div className="h-56 md:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={statusData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis allowDecimals={false} />
+                <XAxis dataKey="name" tick={{fontSize: 12}} />
+                <YAxis allowDecimals={false} tick={{fontSize: 12}} />
                 <Tooltip cursor={{fill: '#f1f5f9'}} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {statusData.map((entry, index) => (
