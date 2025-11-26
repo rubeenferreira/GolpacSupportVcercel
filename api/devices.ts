@@ -102,12 +102,12 @@ export default async function handler(
         else if (data.osVersion?.toLowerCase().includes('mac')) osType = 'macOS';
         else if (data.osVersion?.toLowerCase().includes('nix') || data.osVersion?.toLowerCase().includes('ux')) osType = 'Linux';
 
-        // Calculate Status based on lastSeen (Threshold: 10 minutes)
+        // Calculate Status based on lastSeen (Threshold: 5 minutes)
         const lastSeenDate = new Date(data.lastSeen || 0);
         const diffMinutes = (new Date().getTime() - lastSeenDate.getTime()) / 1000 / 60;
         let status = 'Offline';
-        // If seen within last 10 minutes, consider Online
-        if (diffMinutes < 10) status = 'Online'; 
+        // If seen within last 5 minutes, consider Online
+        if (diffMinutes < 5) status = 'Online'; 
         
         return {
             id: data.installId,
