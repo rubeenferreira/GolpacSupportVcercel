@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -57,6 +57,7 @@ const COLORS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#6366f1', '#ec4899'
 const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<void> }> = ({ device, onRefresh }) => {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [showDebug, setShowDebug] = useState(false);
     
     // Logic to determine if we have real data or should simulate
     const hasRealData = (device.appUsage && device.appUsage.length > 0) || (device.webUsage && device.webUsage.length > 0);
@@ -79,6 +80,9 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     percentage: app.percentage || Math.round((app.usageMinutes / totalMinutes) * 100)
                 }));
             }
+
+            // Sort by usage (desc)
+            realApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
 
             const realWebs = device.webUsage || [];
             return { apps: realApps, websites: realWebs };
@@ -109,27 +113,51 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     </p>
                 </div>
                 
-                <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm self-end sm:self-auto">
+                <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
+                     {/* Debug Button */}
                     <button 
-                        onClick={handleRefresh}
-                        disabled={isRefreshing}
-                        className={`p-1.5 rounded-md transition-all duration-300 ${isRefreshing ? 'text-brand-500 rotate-180' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-50'}`}
-                        title="Refresh Analytics"
+                        onClick={() => setShowDebug(!showDebug)}
+                        className={`p-1.5 rounded-lg border transition-all duration-300 ${showDebug ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'}`}
+                        title="View Raw JSON Data"
                     >
-                        <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+                        <Bug size={16} />
                     </button>
-                    <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                    <Calendar size={16} className="text-slate-400" />
-                    <span className="text-xs font-medium text-slate-600 hidden sm:inline">Date:</span>
-                    <input 
-                        type="date" 
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        disabled={hasRealData} 
-                        className={`text-sm text-slate-700 focus:outline-none border-none bg-transparent ${hasRealData ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    />
+
+                    <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
+                        <button 
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                            className={`p-1.5 rounded-md transition-all duration-300 ${isRefreshing ? 'text-brand-500 rotate-180' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-50'}`}
+                            title="Refresh Analytics"
+                        >
+                            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+                        </button>
+                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                        <Calendar size={16} className="text-slate-400" />
+                        <span className="text-xs font-medium text-slate-600 hidden sm:inline">Date:</span>
+                        <input 
+                            type="date" 
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            disabled={hasRealData} 
+                            className={`text-sm text-slate-700 focus:outline-none border-none bg-transparent ${hasRealData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        />
+                    </div>
                 </div>
             </div>
+
+            {/* DEBUG VIEW */}
+            {showDebug && (
+                <div className="mb-6 bg-slate-900 rounded-xl p-4 text-slate-300 border border-slate-700 shadow-inner overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 mb-2 text-xs font-mono text-slate-400 border-b border-slate-700 pb-2">
+                        <Code size={14} />
+                        RAW DATABASE RECORD (ID: {device.id})
+                    </div>
+                    <pre className="font-mono text-[10px] md:text-xs overflow-x-auto max-h-60 custom-scrollbar">
+                        {JSON.stringify(device, null, 2)}
+                    </pre>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
@@ -161,13 +189,14 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
-                        <div className="flex-1 w-full">
+                        {/* Scrollable list for ALL apps */}
+                        <div className="flex-1 w-full max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                             <ul className="space-y-3">
-                                {apps.slice(0, 5).map((app, idx) => (
-                                    <li key={idx} className="flex items-center justify-between text-xs md:text-sm">
+                                {apps.map((app, idx) => (
+                                    <li key={idx} className="flex items-center justify-between text-xs md:text-sm group hover:bg-slate-50 p-1 rounded-lg transition-colors">
                                         <div className="flex items-center gap-2 truncate">
                                             <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: app.color }} />
-                                            <span className="font-medium text-slate-700 truncate max-w-[100px] sm:max-w-none">{app.name}</span>
+                                            <span className="font-medium text-slate-700 truncate max-w-[100px] sm:max-w-none" title={app.name}>{app.name}</span>
                                         </div>
                                         <div className="flex items-center gap-2 md:gap-4 text-slate-500">
                                             <span className="text-[10px] md:text-xs flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded tabular-nums">
@@ -203,7 +232,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {websites.slice(0, 6).map((site, idx) => (
+                                {websites.slice(0, 10).map((site, idx) => (
                                     <tr key={idx} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-3 py-2.5 font-medium text-slate-700 flex items-center gap-2 max-w-[150px] truncate">
                                             <img 
@@ -522,31 +551,4 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                                    }}
                                    className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
                                        editingDevice.company === company 
-                                       ? 'bg-brand-50 border-brand-200 text-brand-700 ring-1 ring-brand-200' 
-                                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                   }`}
-                               >
-                                   <Building2 size={16} />
-                                   <span className="font-medium">{company}</span>
-                                   {editingDevice.company === company && (
-                                       <span className="ml-auto text-xs bg-brand-200 text-brand-800 px-2 py-0.5 rounded-full">Current</span>
-                                   )}
-                               </button>
-                           ))}
-                           <button
-                               onClick={() => {
-                                   onAssignCompany(editingDevice.id, '');
-                                   setEditingDevice(null);
-                               }}
-                               className="w-full text-xs text-slate-400 hover:text-red-500 mt-2 py-2"
-                           >
-                               Remove from group
-                           </button>
-                       </div>
-                   </div>
-              </div>
-          </div>
-      )}
-    </div>
-  );
-};
+                                       ? 'bg-brand-5
