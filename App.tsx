@@ -25,13 +25,11 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Determine API Base URL
-  // We check window.location to see if we are running locally (dev or preview)
-  // This prevents 404 errors when running 'npm run preview' or 'vite' locally
-  const isLocal = typeof window !== 'undefined' && 
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-  // Use the project domain for local dev. 
-  const API_BASE = isLocal ? 'https://golpac-support-vcercel.vercel.app' : '';
+  // Logic: If the hostname ends with 'vercel.app', we are on the deployed infrastructure (preview or prod),
+  // so we use relative paths ('') to hit the functions of THAT specific deployment.
+  // Otherwise (localhost, 127.0.0.1, 192.168.x.x, custom domains), we point to the main production backend.
+  const isVercelDeployment = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app');
+  const API_BASE = isVercelDeployment ? '' : 'https://golpac-support-vcercel.vercel.app';
 
   // --- Session Management ---
 
@@ -107,22 +105,23 @@ const App: React.FC = () => {
 
   const fetchDevices = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
+    const targetUrl = `${API_BASE}/api/devices?_t=${Date.now()}`;
     try {
       // Add timestamp to prevent caching
-      const response = await fetch(`${API_BASE}/api/devices?_t=${Date.now()}`);
+      const response = await fetch(targetUrl);
       if (response.ok) {
           const data = await response.json();
           setDevices(data);
       } else {
-          console.error(`Failed to fetch devices from ${API_BASE}/api/devices. Status: ${response.status}`);
+          console.error(`Failed to fetch devices. URL: ${targetUrl} | Status: ${response.status}`);
           const contentType = response.headers.get("content-type");
           if (contentType && contentType.indexOf("application/json") === -1) {
               const text = await response.text();
-              console.error("Received HTML instead of JSON (likely 404 page):", text.substring(0, 100));
+              console.error("Received HTML instead of JSON. This usually means the API route was not found (404) or crashed.", text.substring(0, 100));
           }
       }
     } catch (error) {
-      console.error("Failed to fetch devices", error);
+      console.error(`Network error fetching devices from ${targetUrl}`, error);
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -132,6 +131,17 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchDevices(true);
+  }, [isAuthenticated, fetchDevices]);
+
+  // Auto-Refresh Effect (Every 30 seconds)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const intervalId = setInterval(() => {
+      fetchDevices(false); // Silent refresh
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(intervalId);
   }, [isAuthenticated, fetchDevices]);
 
   // --- Handlers ---
