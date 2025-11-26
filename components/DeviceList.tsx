@@ -13,6 +13,15 @@ interface DeviceListProps {
   isReadOnly?: boolean;
 }
 
+// Helper to format decimal minutes into H m s
+const formatDuration = (minutes: number) => {
+  const totalSeconds = Math.round(minutes * 60);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return `${h}h ${m}m ${s}s`;
+};
+
 // Mock Data Generator (Fallback only)
 const generateMockData = (os: string, dateRange: string) => {
   const isMac = os === 'macOS';
@@ -162,8 +171,8 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                             <span className="font-medium text-slate-700">{app.name}</span>
                                         </div>
                                         <div className="flex items-center gap-4 text-slate-500">
-                                            <span className="text-xs flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded">
-                                                <Clock size={10} /> {Math.floor(app.usageMinutes / 60)}h {app.usageMinutes % 60}m
+                                            <span className="text-xs flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded tabular-nums">
+                                                <Clock size={10} /> {formatDuration(app.usageMinutes)}
                                             </span>
                                             <span className="font-bold w-12 text-right">{app.percentage.toFixed(0)}%</span>
                                         </div>
