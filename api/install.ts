@@ -6,7 +6,6 @@ export default async function handler(
   response: VercelResponse
 ) {
   // Allow any origin to hit the install endpoint (protected by Token anyway)
-  // This ensures your custom software/installer is never blocked by CORS
   const origin = request.headers.origin || '*';
 
   response.setHeader('Access-Control-Allow-Origin', origin);
@@ -33,12 +32,12 @@ export default async function handler(
     return response.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Initialize KV client with fallback to Upstash env vars
+  // Initialize KV client
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!kvUrl || !kvToken) {
-    return response.status(503).json({ error: "Database not connected. Please connect Upstash or Vercel KV." });
+    return response.status(503).json({ error: "Database not connected." });
   }
 
   const kv = createClient({
@@ -48,6 +47,9 @@ export default async function handler(
 
   try {
     const data = request.body;
+    
+    // DEBUGGING: Log the incoming payload to Vercel Logs
+    console.log("Incoming Heartbeat:", JSON.stringify(data));
     
     // Basic validation
     if (!data || !data.installId || !data.hostname) {
@@ -60,21 +62,23 @@ export default async function handler(
     await kv.sadd('device_ids', data.installId);
 
     // 2. Fetch existing data to perform a MERGE
-    // This is critical: We must preserve fields like 'company' that are set via the Dashboard,
-    // and preserve 'appUsage' if this specific heartbeat is just a ping without usage stats.
     const existingData: any = await kv.get(key) || {};
 
     // 3. Normalization Logic (Handle Go/JSON casing issues)
-    // Go often sends 'AppUsage' or 'AppVersion', frontend needs 'appUsage', 'appVersion'
-    const appUsage = data.appUsage || data.AppUsage || data.app_usage;
-    const webUsage = data.webUsage || data.WebUsage || data.web_usage;
+    const appUsageRaw = data.appUsage || data.AppUsage || data.app_usage;
+    const webUsageRaw = data.webUsage || data.WebUsage || data.web_usage;
     const userName = data.userName || data.UserName || data.username || data.user;
     const osVersion = data.osVersion || data.OsVersion || data.OSVersion;
+
+    // CRITICAL FIX: Only update usage stats if the incoming array HAS DATA.
+    // This prevents empty heartbeats from wiping out the charts.
+    const appUsage = (Array.isArray(appUsageRaw) && appUsageRaw.length > 0) ? appUsageRaw : undefined;
+    const webUsage = (Array.isArray(webUsageRaw) && webUsageRaw.length > 0) ? webUsageRaw : undefined;
 
     // Construct the normalized payload
     const normalizedNewData = {
         ...data,
-        ...(appUsage && { appUsage }), // Only overwrite if present in this request
+        ...(appUsage && { appUsage }), // Only overwrite if we received actual items
         ...(webUsage && { webUsage }),
         ...(userName && { userName }),
         ...(osVersion && { osVersion })

@@ -133,13 +133,13 @@ const App: React.FC = () => {
     fetchDevices(true);
   }, [isAuthenticated, fetchDevices]);
 
-  // Auto-Refresh Effect (Every 30 seconds)
+  // Auto-Refresh Effect (Every 10 seconds)
   useEffect(() => {
     if (!isAuthenticated) return;
     
     const intervalId = setInterval(() => {
       fetchDevices(false); // Silent refresh
-    }, 30000); // 30 seconds
+    }, 10000); // 10 seconds
 
     return () => clearInterval(intervalId);
   }, [isAuthenticated, fetchDevices]);
