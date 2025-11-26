@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -69,23 +70,20 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showDebug, setShowDebug] = useState(false);
+    const [showIdle, setShowIdle] = useState(false);
     
     // Logic to determine if we have real data or should simulate
     const hasRealData = (device.appUsage && device.appUsage.length > 0) || (device.webUsage && device.webUsage.length > 0);
 
-    const { apps, websites } = useMemo(() => {
+    const { apps, chartApps, websites } = useMemo(() => {
         if (hasRealData) {
             // Process App Usage
             let realApps = [...(device.appUsage || [])];
             
-            // FILTER: Remove apps with 0 usage to hide noise (like background drivers)
-            realApps = realApps.filter(app => app.usageMinutes > 0);
-
             // 1. Sort by usage (descending) so most used apps come first
             realApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
 
             // 2. Assign colors based on RANKING, ensuring diversity.
-            // We intentionally ignore any 'color' sent by the API to guarantee the UI looks correct.
             realApps = realApps.map((app, idx) => ({
                 ...app,
                 color: COLORS[idx % COLORS.length]
@@ -101,16 +99,45 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                 }));
             }
 
+            // 4. PREPARE PIE CHART DATA (Group small items into "Others")
+            // For the Chart, we ALWAYS filter out 0 usage items to avoid weird slices
+            const activeApps = realApps.filter(app => app.usageMinutes > 0);
+            let chartData = [];
+            
+            if (activeApps.length > 5) {
+                const top5 = activeApps.slice(0, 5);
+                const others = activeApps.slice(5);
+                const othersMinutes = others.reduce((sum, item) => sum + item.usageMinutes, 0);
+                const othersPercentage = others.reduce((sum, item) => sum + item.percentage, 0);
+                
+                chartData = [...top5];
+                if (othersMinutes > 0) {
+                    chartData.push({
+                        name: 'Others',
+                        usageMinutes: othersMinutes,
+                        percentage: othersPercentage,
+                        color: '#94a3b8' // Grey for others
+                    });
+                }
+            } else {
+                chartData = activeApps;
+            }
+
+            // 5. FILTER DISPLAY LIST based on Toggle
+            // If showIdle is false, hide apps with 0 usage
+            const displayApps = showIdle ? realApps : activeApps;
+
             const realWebs = device.webUsage || [];
             // Sort websites by value (visits/time) descending
             realWebs.sort((a, b) => b.visits - a.visits);
 
-            return { apps: realApps, websites: realWebs };
+            return { apps: displayApps, chartApps: chartData, websites: realWebs };
         } else {
             // Fallback to mock data based on OS
-            return generateMockData(device.os, date);
+            const mock = generateMockData(device.os, date);
+            return { apps: mock.apps, chartApps: mock.apps, websites: mock.websites };
         }
-    }, [device, date, hasRealData]);
+    }, [device, date, hasRealData, showIdle]);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
@@ -183,17 +210,27 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                 
                 {/* App Usage Chart */}
                 <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <h4 className="font-semibold text-sm md:text-base text-slate-800 mb-4 flex items-center gap-2">
-                        <PieChartIcon size={18} className="text-purple-500" />
-                        Most Used Apps
-                    </h4>
+                    <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-semibold text-sm md:text-base text-slate-800 flex items-center gap-2">
+                            <PieChartIcon size={18} className="text-purple-500" />
+                            Most Used Apps
+                        </h4>
+                        <button 
+                            onClick={() => setShowIdle(!showIdle)}
+                            className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${showIdle ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
+                        >
+                            {showIdle ? <Eye size={12}/> : <EyeOff size={12}/>}
+                            {showIdle ? 'Hide Idle' : 'Show Idle'}
+                        </button>
+                    </div>
+
                     {apps.length > 0 ? (
                     <div className="flex flex-col sm:flex-row items-center gap-6">
                         <div className="h-40 w-40 md:h-48 md:w-48 shrink-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={apps as any[]}
+                                        data={chartApps as any[]}
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={35}
@@ -201,7 +238,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                         paddingAngle={5}
                                         dataKey="percentage"
                                     >
-                                        {apps.map((entry, index) => (
+                                        {chartApps.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.color} />
                                         ))}
                                     </Pie>
@@ -215,14 +252,14 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                 {apps.map((app, idx) => (
                                     <li key={idx} className="flex items-center justify-between text-xs md:text-sm group hover:bg-slate-50 p-1 rounded-lg transition-colors">
                                         <div className="flex items-center gap-2 truncate">
-                                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: app.color }} />
-                                            <span className="font-medium text-slate-700 truncate max-w-[100px] sm:max-w-none" title={app.name}>{app.name}</span>
+                                            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${app.usageMinutes === 0 ? 'bg-slate-300' : ''}`} style={{ backgroundColor: app.usageMinutes > 0 ? app.color : undefined }} />
+                                            <span className={`font-medium truncate max-w-[100px] sm:max-w-none ${app.usageMinutes === 0 ? 'text-slate-400 italic' : 'text-slate-700'}`} title={app.name}>{app.name}</span>
                                         </div>
                                         <div className="flex items-center gap-2 md:gap-4 text-slate-500">
                                             <span className="text-[10px] md:text-xs flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded tabular-nums">
                                                 <Clock size={10} /> {formatDuration(app.usageMinutes)}
                                             </span>
-                                            <span className="font-bold w-10 text-right">{app.percentage.toFixed(0)}%</span>
+                                            {app.usageMinutes > 0 && <span className="font-bold w-10 text-right">{app.percentage.toFixed(0)}%</span>}
                                         </div>
                                     </li>
                                 ))}
