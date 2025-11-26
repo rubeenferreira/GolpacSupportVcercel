@@ -551,4 +551,23 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                                    }}
                                    className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
                                        editingDevice.company === company 
-                                       ? 'bg-brand-5
+                                       ? 'bg-brand-50 border-brand-200 text-brand-700' 
+                                       : 'bg-white border-slate-200 text-slate-600 hover:border-brand-200 hover:shadow-sm'
+                                   }`}
+                               >
+                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                       editingDevice.company === company ? 'border-brand-500' : 'border-slate-300'
+                                   }`}>
+                                       {editingDevice.company === company && <div className="w-2 h-2 rounded-full bg-brand-500" />}
+                                   </div>
+                                   <span className="font-medium">{company}</span>
+                               </button>
+                           ))}
+                       </div>
+                   </div>
+              </div>
+          </div>
+      )}
+    </div>
+  );
+};
