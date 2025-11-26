@@ -23,6 +23,17 @@ const formatDuration = (minutes: number) => {
   return `${h}h ${m}m ${s}s`;
 };
 
+// Helper to intelligent format web stats (Visits vs Duration)
+const formatWebStat = (val: number) => {
+    // If value is huge (> 10000), assume it's milliseconds and format as time
+    if (val > 10000) {
+        const minutes = val / 1000 / 60;
+        return formatDuration(minutes);
+    }
+    // Otherwise return as visit count
+    return val.toLocaleString();
+};
+
 // Mock Data Generator (Fallback only)
 const generateMockData = (os: string, dateRange: string) => {
   const isMac = os === 'macOS';
@@ -66,6 +77,9 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
         if (hasRealData) {
             // Process App Usage
             let realApps = [...(device.appUsage || [])];
+            
+            // FILTER: Remove apps with 0 usage to hide noise (like background drivers)
+            realApps = realApps.filter(app => app.usageMinutes > 0);
 
             // 1. Sort by usage (descending) so most used apps come first
             realApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
@@ -88,6 +102,9 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             }
 
             const realWebs = device.webUsage || [];
+            // Sort websites by value (visits/time) descending
+            realWebs.sort((a, b) => b.visits - a.visits);
+
             return { apps: realApps, websites: realWebs };
         } else {
             // Fallback to mock data based on OS
@@ -213,8 +230,9 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                         </div>
                     </div>
                     ) : (
-                        <div className="h-48 flex items-center justify-center text-slate-400 text-sm italic">
-                            No app usage data recorded.
+                        <div className="h-48 flex items-center justify-center text-slate-400 text-sm italic text-center px-4">
+                            No significant app usage recorded.<br/>
+                            <span className="text-xs text-slate-300 mt-1">Idle processes are hidden.</span>
                         </div>
                     )}
                 </div>
@@ -231,7 +249,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                             <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
                                 <tr>
                                     <th className="px-3 py-2">Domain</th>
-                                    <th className="px-3 py-2 text-right">Visits</th>
+                                    <th className="px-3 py-2 text-right">Time / Visits</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -246,7 +264,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                             <span className="truncate">{site.domain}</span>
                                         </td>
                                         <td className="px-3 py-2.5 text-right font-mono text-slate-600">
-                                            {site.visits}
+                                            {formatWebStat(site.visits)}
                                         </td>
                                     </tr>
                                 ))}
