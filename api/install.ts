@@ -54,15 +54,41 @@ export default async function handler(
         return response.status(400).json({ error: "Missing required fields (installId, hostname)" });
     }
 
-    // Save to Database
-    // 1. Add ID to a set of all device IDs
+    const key = `device:${data.installId}`;
+
+    // 1. Add ID to a set of all device IDs (idempotent)
     await kv.sadd('device_ids', data.installId);
-    
-    // 2. Store the device data object
-    await kv.set(`device:${data.installId}`, {
-      ...data,
-      lastSeen: new Date().toISOString()
-    });
+
+    // 2. Fetch existing data to perform a MERGE
+    // This is critical: We must preserve fields like 'company' that are set via the Dashboard,
+    // and preserve 'appUsage' if this specific heartbeat is just a ping without usage stats.
+    const existingData: any = await kv.get(key) || {};
+
+    // 3. Normalization Logic (Handle Go/JSON casing issues)
+    // Go often sends 'AppUsage' or 'AppVersion', frontend needs 'appUsage', 'appVersion'
+    const appUsage = data.appUsage || data.AppUsage || data.app_usage;
+    const webUsage = data.webUsage || data.WebUsage || data.web_usage;
+    const userName = data.userName || data.UserName || data.username || data.user;
+    const osVersion = data.osVersion || data.OsVersion || data.OSVersion;
+
+    // Construct the normalized payload
+    const normalizedNewData = {
+        ...data,
+        ...(appUsage && { appUsage }), // Only overwrite if present in this request
+        ...(webUsage && { webUsage }),
+        ...(userName && { userName }),
+        ...(osVersion && { osVersion })
+    };
+
+    // 4. Merge Logic
+    const updatedData = {
+        ...existingData,       // Keep old fields (company, notes, etc.)
+        ...normalizedNewData,  // Overwrite with new normalized data
+        lastSeen: new Date().toISOString() // Always update timestamp
+    };
+
+    // Store the merged object
+    await kv.set(key, updatedData);
 
     return response.status(200).json({ ok: true });
   } catch (error) {

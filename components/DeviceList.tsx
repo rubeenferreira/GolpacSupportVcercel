@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat } from '../types';
 import { Badge } from './ui/Badge';
@@ -54,11 +53,23 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
 
     const { apps, websites } = useMemo(() => {
         if (hasRealData) {
-            // Use real data, assign colors if missing
-            const realApps = (device.appUsage || []).map((app, idx) => ({
+            // Process App Usage
+            let realApps = (device.appUsage || []).map((app, idx) => ({
                 ...app,
+                // Assign color if missing
                 color: app.color || COLORS[idx % COLORS.length]
             }));
+
+            // Auto-calculate percentages if the installer didn't send them
+            const totalMinutes = realApps.reduce((sum, item) => sum + (item.usageMinutes || 0), 0);
+            if (totalMinutes > 0) {
+                realApps = realApps.map(app => ({
+                    ...app,
+                    // If percentage is 0 or missing, calculate it
+                    percentage: app.percentage || Math.round((app.usageMinutes / totalMinutes) * 100)
+                }));
+            }
+
             const realWebs = device.webUsage || [];
             return { apps: realApps, websites: realWebs };
         } else {

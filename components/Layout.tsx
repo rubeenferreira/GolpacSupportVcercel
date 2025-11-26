@@ -48,8 +48,8 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onChangeView, child
       <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
         <div className="p-6 border-b border-slate-100">
            <div className="flex items-center gap-3">
-             <div className="h-12 px-3 bg-brand-600 rounded-xl flex items-center justify-center shadow-sm overflow-hidden shrink-0">
-                <img src={logoUrl} alt="Golpac" className="h-full w-auto object-contain py-2" />
+             <div className="h-12 px-2 bg-brand-600 rounded-xl flex items-center justify-center shadow-sm overflow-hidden shrink-0">
+                <img src={logoUrl} alt="Golpac" className="h-full w-auto object-contain py-1" />
              </div>
              <div className="flex flex-col">
                 <span className="text-lg font-bold text-slate-800 leading-none">Support</span>
