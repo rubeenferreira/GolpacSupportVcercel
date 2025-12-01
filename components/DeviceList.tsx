@@ -29,6 +29,8 @@ const SYSTEM_PROCESS_KEYWORDS = [
 // Helper to format decimal minutes into H m s
 const formatDuration = (minutes: number) => {
   const safeMinutes = Number(minutes) || 0;
+  if (safeMinutes === 0) return "0s";
+  
   const totalSeconds = Math.round(safeMinutes * 60);
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
@@ -114,7 +116,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             // 2. Sort by usage (descending)
             filteredApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
 
-            // 3. Assign colors based on RANKING
+            // 3. Assign colors based on RANKING (Frontend override to ensure consistency)
             const displayApps = filteredApps.map((app, idx) => ({
                 ...app,
                 color: COLORS[idx % COLORS.length]
@@ -130,9 +132,12 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
 
             // 5. PREPARE PIE CHART DATA (Group small items into "Others")
             let chartData: any[] = [];
-            if (displayApps.length > 5) {
-                const top5 = displayApps.slice(0, 5);
-                const others = displayApps.slice(5);
+            // Filter out 0 usage items from the chart entirely to look clean
+            const activeApps = displayApps.filter(a => a.usageMinutes > 0);
+            
+            if (activeApps.length > 5) {
+                const top5 = activeApps.slice(0, 5);
+                const others = activeApps.slice(5);
                 const othersMinutes = others.reduce((sum, item) => sum + item.usageMinutes, 0);
                 const othersPercentage = others.reduce((sum, item) => sum + item.percentage, 0);
                 
@@ -146,7 +151,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     });
                 }
             } else {
-                chartData = displayApps;
+                chartData = activeApps;
             }
 
             const realWebs = device.webUsage || [];
@@ -242,32 +247,34 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                             className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${showSystemApps ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
                         >
                             {showSystemApps ? <Layers size={12}/> : <EyeOff size={12}/>}
-                            {showSystemApps ? 'Showing All' : 'Hide System'}
+                            {showSystemApps ? 'Showing All' : 'System Hidden'}
                         </button>
                     </div>
 
                     {apps.length > 0 ? (
                     <div className="flex flex-col sm:flex-row items-center gap-6">
-                        <div className="h-40 w-40 md:h-48 md:w-48 shrink-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={chartApps}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={35}
-                                        outerRadius={60}
-                                        paddingAngle={5}
-                                        dataKey="percentage"
-                                    >
-                                        {chartApps.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <RechartsTooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
+                        {chartApps.length > 0 && (
+                            <div className="h-40 w-40 md:h-48 md:w-48 shrink-0">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={chartApps}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={35}
+                                            outerRadius={60}
+                                            paddingAngle={5}
+                                            dataKey="percentage"
+                                        >
+                                            {chartApps.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        )}
                         {/* Scrollable list for ALL apps */}
                         <div className="flex-1 w-full max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                             <ul className="space-y-3">

@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@vercel/kv';
 
@@ -48,7 +49,7 @@ export default async function handler(
   try {
     const data = request.body;
     
-    // DEBUGGING: Log the incoming payload to Vercel Logs
+    // DEBUGGING: Log the incoming payload
     console.log("Incoming Heartbeat:", JSON.stringify(data));
     
     // Basic validation
@@ -61,34 +62,74 @@ export default async function handler(
     // 1. Add ID to a set of all device IDs (idempotent)
     await kv.sadd('device_ids', data.installId);
 
-    // 2. Fetch existing data to perform a MERGE
+    // 2. Fetch existing data for MERGE
     const existingData: any = await kv.get(key) || {};
 
-    // 3. Normalization Logic (Handle Go/JSON casing issues)
+    // 3. Normalization (Handle Go casing)
     const appUsageRaw = data.appUsage || data.AppUsage || data.app_usage;
     const webUsageRaw = data.webUsage || data.WebUsage || data.web_usage;
     const userName = data.userName || data.UserName || data.username || data.user;
     const osVersion = data.osVersion || data.OsVersion || data.OSVersion;
 
-    // CRITICAL FIX: Only update usage stats if the incoming array HAS DATA.
-    // This prevents empty heartbeats from wiping out the charts.
-    const appUsage = (Array.isArray(appUsageRaw) && appUsageRaw.length > 0) ? appUsageRaw : undefined;
-    const webUsage = (Array.isArray(webUsageRaw) && webUsageRaw.length > 0) ? webUsageRaw : undefined;
+    // 4. ACCUMULATION LOGIC
+    // Since the agent sends DELTAS (usage since last tick) and resets, we must SUM values.
+    
+    // -- Apps --
+    let mergedAppUsage = existingData.appUsage || [];
+    if (Array.isArray(appUsageRaw) && appUsageRaw.length > 0) {
+        const usageMap = new Map();
+        
+        // Load existing
+        mergedAppUsage.forEach((app: any) => usageMap.set(app.name, { ...app }));
+        
+        // Merge incoming deltas
+        appUsageRaw.forEach((incApp: any) => {
+            const existing = usageMap.get(incApp.name);
+            if (existing) {
+                // Add new minutes to existing minutes
+                existing.usageMinutes = (Number(existing.usageMinutes) || 0) + (Number(incApp.usageMinutes) || 0);
+            } else {
+                // New app detected
+                usageMap.set(incApp.name, { 
+                    name: incApp.name, 
+                    usageMinutes: Number(incApp.usageMinutes) || 0,
+                    color: incApp.color 
+                });
+            }
+        });
+        mergedAppUsage = Array.from(usageMap.values());
+    }
 
-    // Construct the normalized payload
-    const normalizedNewData = {
-        ...data,
-        ...(appUsage && { appUsage }), // Only overwrite if we received actual items
-        ...(webUsage && { webUsage }),
-        ...(userName && { userName }),
-        ...(osVersion && { osVersion })
-    };
+    // -- Websites --
+    let mergedWebUsage = existingData.webUsage || [];
+    if (Array.isArray(webUsageRaw) && webUsageRaw.length > 0) {
+        const webMap = new Map();
+        mergedWebUsage.forEach((site: any) => webMap.set(site.domain, { ...site }));
+        
+        webUsageRaw.forEach((incSite: any) => {
+             const existing = webMap.get(incSite.domain);
+             if (existing) {
+                 existing.visits = (Number(existing.visits) || 0) + (Number(incSite.visits) || 0);
+             } else {
+                 webMap.set(incSite.domain, {
+                     domain: incSite.domain,
+                     visits: Number(incSite.visits) || 0,
+                     category: incSite.category || 'Browsing'
+                 });
+             }
+        });
+        mergedWebUsage = Array.from(webMap.values());
+    }
 
-    // 4. Merge Logic
+    // 5. Construct Final Object
     const updatedData = {
         ...existingData,       // Keep old fields (company, notes, etc.)
-        ...normalizedNewData,  // Overwrite with new normalized data
-        lastSeen: new Date().toISOString() // Always update timestamp
+        ...data,               // Update basic fields (IP, OS, etc)
+        appUsage: mergedAppUsage, // Save the ACCUMULATED arrays
+        webUsage: mergedWebUsage,
+        userName: userName || existingData.userName,
+        osVersion: osVersion || existingData.osVersion,
+        lastSeen: new Date().toISOString()
     };
 
     // Store the merged object
