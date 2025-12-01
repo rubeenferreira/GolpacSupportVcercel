@@ -34,12 +34,29 @@ export default async function handler(
     token: kvToken,
   });
 
-  // Handle Delete Device
+  // Handle Delete Device OR Reset Analytics
   if (request.method === 'DELETE') {
-      const { id } = request.query;
+      const { id, action } = request.query;
+      
       if (!id || Array.isArray(id)) return response.status(400).json({ error: 'Invalid ID' });
       
       try {
+          // Special Action: Reset Analytics only (keep device)
+          if (action === 'reset_analytics') {
+              const existingData: any = await kv.get(`device:${id}`);
+              if (existingData) {
+                  const resetData = {
+                      ...existingData,
+                      appUsage: [],
+                      webUsage: []
+                  };
+                  await kv.set(`device:${id}`, resetData);
+                  return response.status(200).json({ ok: true, message: "Analytics reset" });
+              }
+              return response.status(404).json({ error: "Device not found" });
+          }
+
+          // Default Action: Delete entire device
           await kv.srem('device_ids', id);
           await kv.del(`device:${id}`);
           return response.status(200).json({ ok: true });

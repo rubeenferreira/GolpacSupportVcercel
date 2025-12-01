@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -266,6 +266,24 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
         setTimeout(() => setIsRefreshing(false), 500);
     };
 
+    const handleResetAnalytics = async () => {
+        if (!confirm('Are you sure? This will reset all app and web usage history to zero for this device.')) return;
+        setIsRefreshing(true);
+        try {
+             // Logic to find API Base URL consistent with App.tsx
+             const isVercel = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app');
+             const API_BASE = isVercel ? '' : 'https://golpac-support-vcercel.vercel.app';
+             
+             await fetch(`${API_BASE}/api/devices?action=reset_analytics&id=${device.id}`, { method: 'DELETE' });
+             await onRefresh();
+        } catch (e) {
+            console.error("Failed to reset", e);
+            alert("Failed to reset analytics");
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
     return (
         <div className="bg-slate-50 p-4 md:p-6 border-t border-slate-100 shadow-inner animate-in slide-in-from-top-2 duration-300">
             
@@ -300,7 +318,20 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                         >
                             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
                         </button>
+                        
                         <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                        
+                        <button 
+                            onClick={handleResetAnalytics}
+                            disabled={isRefreshing}
+                            className={`p-1.5 rounded-md transition-all duration-300 text-slate-400 hover:text-red-500 hover:bg-red-50`}
+                            title="Reset Analytics Data"
+                        >
+                            <RotateCcw size={16} />
+                        </button>
+
+                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
+
                         <Calendar size={16} className="text-slate-400" />
                         <span className="text-xs font-medium text-slate-600 hidden sm:inline">Date:</span>
                         <input 
