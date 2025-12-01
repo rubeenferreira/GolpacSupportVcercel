@@ -14,7 +14,7 @@ interface DeviceListProps {
   isReadOnly?: boolean;
 }
 
-// Common Windows/System background processes to ignore by default
+// Aggressive list of Windows/System background processes to ignore
 const SYSTEM_PROCESS_KEYWORDS = [
   'system', 'host', 'service', 'daemon', 'installer', 'update', 'helper', 
   'nvidia', 'intel', 'amd', 'asus', 'realtek', 'audio', 'sound', 'driver',
@@ -23,8 +23,39 @@ const SYSTEM_PROCESS_KEYWORDS = [
   'registry', 'spool', 'print', 'task', 'manager', 'tray', 'notification',
   'wireless', 'bluetooth', 'network', 'security', 'wmi', 'provider', 'policy',
   'local', 'session', 'console', 'window', 'desktop', 'shell', 'dts', 'gamebar',
-  'xbox', 'yourphone', 'widget', 'webview', 'edgeupdate', 'crashpad', 'handler'
+  'xbox', 'yourphone', 'widget', 'webview', 'edgeupdate', 'crashpad', 'handler',
+  // Specific noise from user feedback
+  'runner', 'smss', 'mpcmdrun', 'igfx', 'dramhal', 'unsecapp', 'mousocore', 
+  'presentation', 'sql', 'armsvc', 'gamesdk', 'memory', 'malwarebytes', 'tiworker', 
+  'extensioncard', 'atk', 'sppsvc', 'lghub', 'nissrv', 'websocket', 'nvcontainer', 
+  'adobearm', 'cleanmgr', 'vssvc', 'tabtip', 'filecoauth', 'aimgr', 'tv_', 'splwow',
+  'golpac', 'rundll', 'compattel'
 ];
+
+// Map ugly process names to professional titles
+const PRETTY_NAMES: Record<string, string> = {
+    'winword': 'Microsoft Word',
+    'excel': 'Microsoft Excel',
+    'powerpnt': 'Microsoft PowerPoint',
+    'outlook': 'Microsoft Outlook',
+    'msedge': 'Microsoft Edge',
+    'chrome': 'Google Chrome',
+    'brave': 'Brave Browser',
+    'firefox': 'Mozilla Firefox',
+    'steam': 'Steam',
+    'discord': 'Discord',
+    'code': 'Visual Studio Code',
+    'teams': 'Microsoft Teams',
+    'acrobat': 'Adobe Acrobat',
+    'notepad': 'Notepad',
+    'calc': 'Calculator',
+    'spotify': 'Spotify',
+    'officeclicktorun': 'Microsoft Office Background',
+    'onenote': 'OneNote',
+    'mspaint': 'Paint',
+    'cmd': 'Command Prompt',
+    'powershell': 'PowerShell'
+};
 
 // Helper to format decimal minutes into H m s
 const formatDuration = (minutes: number) => {
@@ -41,12 +72,16 @@ const formatDuration = (minutes: number) => {
   return `${s}s`;
 };
 
-// Helper to clean app names (remove .exe, capitalize)
+// Helper to clean app names (remove .exe, capitalize, map to pretty names)
 const cleanAppName = (name: string) => {
     if (!name) return 'Unknown';
-    let clean = name.toLowerCase().replace('.exe', '');
-    // Capitalize first letter
-    return clean.charAt(0).toUpperCase() + clean.slice(1);
+    const lowerName = name.toLowerCase().replace('.exe', '');
+    
+    // Check dictionary first
+    if (PRETTY_NAMES[lowerName]) return PRETTY_NAMES[lowerName];
+
+    // Fallback to capitalizing first letter
+    return lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
 };
 
 // Helper to intelligent format web stats (Visits vs Duration)
@@ -89,7 +124,17 @@ const generateMockData = (os: string, dateRange: string) => {
   return { apps, websites };
 };
 
-const COLORS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#f97316', '#64748b', '#22c55e', '#a855f7'];
+// Vibrant but professional palette
+const COLORS = [
+    '#3b82f6', // Bright Blue
+    '#8b5cf6', // Violet
+    '#10b981', // Emerald
+    '#f59e0b', // Amber
+    '#ec4899', // Pink
+    '#06b6d4', // Cyan
+    '#f97316', // Orange
+    '#6366f1', // Indigo
+];
 
 const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<void> }> = ({ device, onRefresh }) => {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -106,10 +151,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             let rawApps = [...(device.appUsage || [])];
             
             // 1. Filter Logic:
-            // - By default, hide anything with < 0.1 minutes usage (micro-processes) unless Show System is ON
-            // - By default, hide known system processes (based on keywords)
             let filteredApps = rawApps;
-            
             if (!showSystemApps) {
               filteredApps = rawApps.filter(app => {
                  const name = app.name.toLowerCase();
@@ -147,6 +189,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             // Filter out 0 usage items from the chart entirely to look clean
             const activeApps = displayApps.filter(a => a.usageMinutes > 0);
             
+            // Limit chart to top 5 + Others to prevent color mess
             if (activeApps.length > 5) {
                 const top5 = activeApps.slice(0, 5);
                 const others = activeApps.slice(5);
@@ -259,7 +302,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                             className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${showSystemApps ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
                         >
                             {showSystemApps ? <Layers size={12}/> : <EyeOff size={12}/>}
-                            {showSystemApps ? 'Showing All' : 'System Hidden'}
+                            {showSystemApps ? 'Showing All / System' : 'System Hidden'}
                         </button>
                     </div>
 
