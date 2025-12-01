@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Device, DeviceStatus, OSType } from '../types';
 import { APP_LATEST_VERSION } from '../constants';
@@ -15,7 +16,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
       total: devices.length,
       online: devices.filter(d => d.status === DeviceStatus.ONLINE).length,
       critical: devices.filter(d => d.status === DeviceStatus.CRITICAL).length,
-      outdated: devices.filter(d => d.appVersion !== APP_LATEST_VERSION).length
+      // Only count as outdated if it exists and is not equal to latest
+      outdated: devices.filter(d => d.appVersion && d.appVersion !== 'N/A' && d.appVersion !== APP_LATEST_VERSION).length
     };
   }, [devices]);
 

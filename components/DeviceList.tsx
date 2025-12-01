@@ -41,6 +41,14 @@ const formatDuration = (minutes: number) => {
   return `${s}s`;
 };
 
+// Helper to clean app names (remove .exe, capitalize)
+const cleanAppName = (name: string) => {
+    if (!name) return 'Unknown';
+    let clean = name.toLowerCase().replace('.exe', '');
+    // Capitalize first letter
+    return clean.charAt(0).toUpperCase() + clean.slice(1);
+};
+
 // Helper to intelligent format web stats (Visits vs Duration)
 const formatWebStat = (val: number) => {
     // If value is huge (> 10000), assume it's milliseconds and format as time
@@ -113,11 +121,15 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
               });
             }
 
-            // 2. Sort by usage (descending)
-            filteredApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
+            // 2. Clean Names & Sort by usage (descending)
+            const cleanedApps = filteredApps.map(app => ({
+                ...app,
+                name: cleanAppName(app.name)
+            }));
+            cleanedApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
 
             // 3. Assign colors based on RANKING (Frontend override to ensure consistency)
-            const displayApps = filteredApps.map((app, idx) => ({
+            const displayApps = cleanedApps.map((app, idx) => ({
                 ...app,
                 color: COLORS[idx % COLORS.length]
             }));
@@ -266,7 +278,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                             paddingAngle={5}
                                             dataKey="percentage"
                                         >
-                                            {chartApps.map((entry, index) => (
+                                            {chartApps.map((entry: any, index: number) => (
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                         </Pie>
