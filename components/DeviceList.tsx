@@ -29,7 +29,7 @@ const SYSTEM_PROCESS_KEYWORDS = [
   'presentation', 'sql', 'armsvc', 'gamesdk', 'memory', 'malwarebytes', 'tiworker', 
   'extensioncard', 'atk', 'sppsvc', 'lghub', 'nissrv', 'websocket', 'nvcontainer', 
   'adobearm', 'cleanmgr', 'vssvc', 'tabtip', 'filecoauth', 'aimgr', 'tv_', 'splwow',
-  'golpac', 'rundll', 'compattel'
+  'golpac', 'rundll', 'compattel', 'officeclick', 'video.ui', 'notepad'
 ];
 
 // Map ugly process names to professional titles
@@ -54,7 +54,9 @@ const PRETTY_NAMES: Record<string, string> = {
     'onenote': 'OneNote',
     'mspaint': 'Paint',
     'cmd': 'Command Prompt',
-    'powershell': 'PowerShell'
+    'powershell': 'PowerShell',
+    'teamviewer': 'TeamViewer',
+    'onedrive': 'OneDrive'
 };
 
 // Helper to format decimal minutes into H m s
@@ -156,7 +158,8 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
               filteredApps = rawApps.filter(app => {
                  const name = app.name.toLowerCase();
                  const isSystem = SYSTEM_PROCESS_KEYWORDS.some(k => name.includes(k));
-                 const isMicro = app.usageMinutes < 0.1; // Filter out < 6 seconds noise
+                 // Filter out < 6 seconds noise OR exactly 0 usage if not showing system
+                 const isMicro = app.usageMinutes < 0.1; 
                  
                  // Keep it if it's NOT system AND NOT micro
                  return !isSystem && !isMicro;
