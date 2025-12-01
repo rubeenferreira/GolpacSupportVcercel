@@ -33,13 +33,16 @@ const formatDuration = (minutes: number) => {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
-  return `${h}h ${m}m ${s}s`;
+  
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
 };
 
 // Helper to intelligent format web stats (Visits vs Duration)
 const formatWebStat = (val: number) => {
     // If value is huge (> 10000), assume it's milliseconds and format as time
-    if (val > 1000) { // Lowered threshold since 2000ms is 2 seconds
+    if (val > 1000) { 
         const minutes = val / 1000 / 60;
         return formatDuration(minutes);
     }
@@ -93,7 +96,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             let rawApps = [...(device.appUsage || [])];
             
             // 1. Filter Logic:
-            // - By default, hide anything with < 0.1 minutes usage (micro-processes)
+            // - By default, hide anything with < 0.1 minutes usage (micro-processes) unless Show System is ON
             // - By default, hide known system processes (based on keywords)
             let filteredApps = rawApps;
             
@@ -101,7 +104,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
               filteredApps = rawApps.filter(app => {
                  const name = app.name.toLowerCase();
                  const isSystem = SYSTEM_PROCESS_KEYWORDS.some(k => name.includes(k));
-                 const isMicro = app.usageMinutes < 0.1; // Filter out 0.01 noise
+                 const isMicro = app.usageMinutes < 0.1; // Filter out < 6 seconds noise
                  
                  // Keep it if it's NOT system AND NOT micro
                  return !isSystem && !isMicro;
@@ -126,7 +129,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             }
 
             // 5. PREPARE PIE CHART DATA (Group small items into "Others")
-            let chartData = [];
+            let chartData: any[] = [];
             if (displayApps.length > 5) {
                 const top5 = displayApps.slice(0, 5);
                 const others = displayApps.slice(5);
@@ -249,7 +252,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={chartApps as any[]}
+                                        data={chartApps}
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={35}
