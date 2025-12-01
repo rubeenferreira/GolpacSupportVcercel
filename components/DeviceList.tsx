@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -13,6 +13,18 @@ interface DeviceListProps {
   onRefreshData: () => Promise<void>;
   isReadOnly?: boolean;
 }
+
+// Common Windows/System background processes to ignore by default
+const SYSTEM_PROCESS_KEYWORDS = [
+  'system', 'host', 'service', 'daemon', 'installer', 'update', 'helper', 
+  'nvidia', 'intel', 'amd', 'asus', 'realtek', 'audio', 'sound', 'driver',
+  'search', 'index', 'logi', 'razer', 'corsair', 'armoury', 'crate', 'synapse',
+  'explorer', 'runtime', 'broker', 'background', 'defender', 'antimalware',
+  'registry', 'spool', 'print', 'task', 'manager', 'tray', 'notification',
+  'wireless', 'bluetooth', 'network', 'security', 'wmi', 'provider', 'policy',
+  'local', 'session', 'console', 'window', 'desktop', 'shell', 'dts', 'gamebar',
+  'xbox', 'yourphone', 'widget', 'webview', 'edgeupdate', 'crashpad', 'handler'
+];
 
 // Helper to format decimal minutes into H m s
 const formatDuration = (minutes: number) => {
@@ -27,7 +39,7 @@ const formatDuration = (minutes: number) => {
 // Helper to intelligent format web stats (Visits vs Duration)
 const formatWebStat = (val: number) => {
     // If value is huge (> 10000), assume it's milliseconds and format as time
-    if (val > 10000) {
+    if (val > 1000) { // Lowered threshold since 2000ms is 2 seconds
         const minutes = val / 1000 / 60;
         return formatDuration(minutes);
     }
@@ -70,7 +82,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showDebug, setShowDebug] = useState(false);
-    const [showIdle, setShowIdle] = useState(false);
+    const [showSystemApps, setShowSystemApps] = useState(false);
     
     // Logic to determine if we have real data or should simulate
     const hasRealData = (device.appUsage && device.appUsage.length > 0) || (device.webUsage && device.webUsage.length > 0);
@@ -78,35 +90,46 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
     const { apps, chartApps, websites } = useMemo(() => {
         if (hasRealData) {
             // Process App Usage
-            let realApps = [...(device.appUsage || [])];
+            let rawApps = [...(device.appUsage || [])];
             
-            // 1. Sort by usage (descending) so most used apps come first
-            realApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
+            // 1. Filter Logic:
+            // - By default, hide anything with < 0.1 minutes usage (micro-processes)
+            // - By default, hide known system processes (based on keywords)
+            let filteredApps = rawApps;
+            
+            if (!showSystemApps) {
+              filteredApps = rawApps.filter(app => {
+                 const name = app.name.toLowerCase();
+                 const isSystem = SYSTEM_PROCESS_KEYWORDS.some(k => name.includes(k));
+                 const isMicro = app.usageMinutes < 0.1; // Filter out 0.01 noise
+                 
+                 // Keep it if it's NOT system AND NOT micro
+                 return !isSystem && !isMicro;
+              });
+            }
 
-            // 2. Assign colors based on RANKING, ensuring diversity.
-            realApps = realApps.map((app, idx) => ({
+            // 2. Sort by usage (descending)
+            filteredApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
+
+            // 3. Assign colors based on RANKING
+            const displayApps = filteredApps.map((app, idx) => ({
                 ...app,
                 color: COLORS[idx % COLORS.length]
             }));
 
-            // 3. Auto-calculate percentages if the installer didn't send them
-            const totalMinutes = realApps.reduce((sum, item) => sum + (item.usageMinutes || 0), 0);
+            // 4. Calculate Percentages for the filtered view
+            const totalMinutes = displayApps.reduce((sum, item) => sum + (item.usageMinutes || 0), 0);
             if (totalMinutes > 0) {
-                realApps = realApps.map(app => ({
-                    ...app,
-                    // If percentage is 0 or missing, calculate it
-                    percentage: app.percentage || Math.round((app.usageMinutes / totalMinutes) * 100)
-                }));
+                displayApps.forEach(app => {
+                    app.percentage = Math.round((app.usageMinutes / totalMinutes) * 100);
+                });
             }
 
-            // 4. PREPARE PIE CHART DATA (Group small items into "Others")
-            // For the Chart, we ALWAYS filter out 0 usage items to avoid weird slices
-            const activeApps = realApps.filter(app => app.usageMinutes > 0);
+            // 5. PREPARE PIE CHART DATA (Group small items into "Others")
             let chartData = [];
-            
-            if (activeApps.length > 5) {
-                const top5 = activeApps.slice(0, 5);
-                const others = activeApps.slice(5);
+            if (displayApps.length > 5) {
+                const top5 = displayApps.slice(0, 5);
+                const others = displayApps.slice(5);
                 const othersMinutes = others.reduce((sum, item) => sum + item.usageMinutes, 0);
                 const othersPercentage = others.reduce((sum, item) => sum + item.percentage, 0);
                 
@@ -120,12 +143,8 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     });
                 }
             } else {
-                chartData = activeApps;
+                chartData = displayApps;
             }
-
-            // 5. FILTER DISPLAY LIST based on Toggle
-            // If showIdle is false, hide apps with 0 usage
-            const displayApps = showIdle ? realApps : activeApps;
 
             const realWebs = device.webUsage || [];
             // Sort websites by value (visits/time) descending
@@ -137,7 +156,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             const mock = generateMockData(device.os, date);
             return { apps: mock.apps, chartApps: mock.apps, websites: mock.websites };
         }
-    }, [device, date, hasRealData, showIdle]);
+    }, [device, date, hasRealData, showSystemApps]);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
@@ -216,11 +235,11 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                             Most Used Apps
                         </h4>
                         <button 
-                            onClick={() => setShowIdle(!showIdle)}
-                            className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${showIdle ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
+                            onClick={() => setShowSystemApps(!showSystemApps)}
+                            className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${showSystemApps ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
                         >
-                            {showIdle ? <Eye size={12}/> : <EyeOff size={12}/>}
-                            {showIdle ? 'Hide Idle' : 'Show Idle'}
+                            {showSystemApps ? <Layers size={12}/> : <EyeOff size={12}/>}
+                            {showSystemApps ? 'Showing All' : 'Hide System'}
                         </button>
                     </div>
 
@@ -268,8 +287,10 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     </div>
                     ) : (
                         <div className="h-48 flex items-center justify-center text-slate-400 text-sm italic text-center px-4">
-                            No significant app usage recorded.<br/>
-                            <span className="text-xs text-slate-300 mt-1">Idle processes are hidden.</span>
+                            No significant user apps detected.<br/>
+                            <span className="text-xs text-slate-300 mt-1">
+                                {showSystemApps ? 'Even system processes are inactive.' : 'System processes hidden.'}
+                            </span>
                         </div>
                     )}
                 </div>
