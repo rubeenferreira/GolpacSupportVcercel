@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -149,6 +149,8 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
     
     // Logic to determine if we have real data or should simulate
     const hasRealData = (device.appUsage && device.appUsage.length > 0) || (device.webUsage && device.webUsage.length > 0);
+    const isOnline = device.status === 'Online';
+    const missingPayload = isOnline && !hasRealData;
 
     const { apps, chartApps, websites } = useMemo(() => {
         if (hasRealData) {
@@ -303,10 +305,10 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                      {/* Debug Button */}
                     <button 
                         onClick={() => setShowDebug(!showDebug)}
-                        className={`p-1.5 rounded-lg border transition-all duration-300 ${showDebug ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'}`}
+                        className={`p-1.5 rounded-lg border transition-all duration-300 ${showDebug || missingPayload ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'}`}
                         title="View Raw JSON Data"
                     >
-                        <Bug size={16} />
+                        {missingPayload ? <AlertTriangle size={16} className="text-yellow-500" /> : <Bug size={16} />}
                     </button>
 
                     <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
@@ -346,12 +348,26 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             </div>
 
             {/* DEBUG VIEW */}
-            {showDebug && (
+            {(showDebug || missingPayload) && (
                 <div className="mb-6 bg-slate-900 rounded-xl p-4 text-slate-300 border border-slate-700 shadow-inner overflow-hidden animate-in fade-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2 mb-2 text-xs font-mono text-slate-400 border-b border-slate-700 pb-2">
-                        <Code size={14} />
-                        RAW DATABASE RECORD (ID: {device.id})
+                    <div className="flex items-center justify-between mb-2 border-b border-slate-700 pb-2">
+                        <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                            <Code size={14} />
+                            RAW DATABASE RECORD (ID: {device.id})
+                        </div>
+                        {missingPayload && (
+                            <span className="text-xs font-bold text-yellow-500 flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded">
+                                <AlertTriangle size={12} />
+                                WARNING: Device Online but Missing Usage Payload
+                            </span>
+                        )}
                     </div>
+                    {missingPayload && (
+                        <div className="mb-3 text-[11px] text-slate-400 bg-slate-800 p-2 rounded border border-slate-700">
+                            <p><strong>Diagnosis:</strong> The heartbeat is working (Last Seen is updating), but the <code>appUsage</code> array is empty or undefined.</p>
+                            <p className="mt-1"><strong>Fix:</strong> Update your Client <code>sendInstallHeartbeat</code> function to await <code>invoke('get_usage_deltas')</code> and include that data in the <code>fetch</code> body.</p>
+                        </div>
+                    )}
                     <pre className="font-mono text-[10px] md:text-xs overflow-x-auto max-h-60 custom-scrollbar">
                         {JSON.stringify(device, null, 2)}
                     </pre>
