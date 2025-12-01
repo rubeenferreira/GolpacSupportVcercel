@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -86,15 +86,18 @@ const cleanAppName = (name: string) => {
     return lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
 };
 
-// Helper to intelligent format web stats (Visits vs Duration)
-const formatWebStat = (val: number) => {
-    // If value is huge (> 10000), assume it's milliseconds and format as time
-    if (val > 1000) { 
-        const minutes = val / 1000 / 60;
-        return formatDuration(minutes);
+// Helper to extract primary domain (e.g. na.myconnectwise.net -> myconnectwise.net)
+const getPrimaryDomain = (domain: string) => {
+    try {
+        const parts = domain.split('.');
+        if (parts.length > 2) {
+            // Very basic: take last two parts
+            return parts.slice(-2).join('.');
+        }
+        return domain;
+    } catch {
+        return domain;
     }
-    // Otherwise return as visit count
-    return val.toLocaleString();
 };
 
 // Mock Data Generator (Fallback only)
@@ -149,7 +152,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
 
     const { apps, chartApps, websites } = useMemo(() => {
         if (hasRealData) {
-            // Process App Usage
+            // --- Process App Usage ---
             let rawApps = [...(device.appUsage || [])];
             
             // 1. Filter Logic:
@@ -212,11 +215,44 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                 chartData = activeApps;
             }
 
-            const realWebs = device.webUsage || [];
-            // Sort websites by value (visits/time) descending
-            realWebs.sort((a, b) => b.visits - a.visits);
+            // --- Process Web Usage (Group Subdomains) ---
+            const rawWebs = device.webUsage || [];
+            const domainMap = new Map<string, WebUsageStat>();
 
-            return { apps: displayApps, chartApps: chartData, websites: realWebs };
+            rawWebs.forEach(site => {
+                const primaryDomain = getPrimaryDomain(site.domain);
+                const existing = domainMap.get(primaryDomain);
+
+                // Handle legacy data where 'visits' was actually duration in ms
+                let duration = site.usageMinutes || 0;
+                let visits = site.visits || 0;
+
+                // Fallback logic for old agent data
+                if (visits > 1000 && duration === 0) {
+                     duration = visits / 1000 / 60;
+                     visits = 0; // It was time, not visits
+                }
+
+                if (existing) {
+                    existing.usageMinutes = (existing.usageMinutes || 0) + duration;
+                    existing.visits = (existing.visits || 0) + visits;
+                } else {
+                    domainMap.set(primaryDomain, {
+                        domain: primaryDomain,
+                        usageMinutes: duration,
+                        visits: visits,
+                        category: site.category
+                    });
+                }
+            });
+
+            // Convert map to array and sort
+            const groupedWebs = Array.from(domainMap.values());
+            // Sort by duration first, then visits
+            groupedWebs.sort((a, b) => (b.usageMinutes || 0) - (a.usageMinutes || 0));
+
+
+            return { apps: displayApps, chartApps: chartData, websites: groupedWebs };
         } else {
             // Fallback to mock data based on OS
             const mock = generateMockData(device.os, date);
@@ -375,7 +411,8 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                             <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
                                 <tr>
                                     <th className="px-3 py-2">Domain</th>
-                                    <th className="px-3 py-2 text-right">Time / Visits</th>
+                                    <th className="px-3 py-2 text-right">Time Active</th>
+                                    <th className="px-3 py-2 text-right">Visits</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -389,8 +426,14 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                             />
                                             <span className="truncate">{site.domain}</span>
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-slate-600">
-                                            {formatWebStat(site.visits)}
+                                        <td className="px-3 py-2.5 text-right font-mono text-slate-600 text-xs">
+                                            {formatDuration(site.usageMinutes || 0)}
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right font-mono text-slate-500 text-xs">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <MousePointerClick size={10} />
+                                                {site.visits?.toLocaleString() || 0}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

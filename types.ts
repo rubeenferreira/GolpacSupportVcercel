@@ -23,7 +23,8 @@ export interface AppUsageStat {
 
 export interface WebUsageStat {
   domain: string;
-  visits: number;
+  visits: number; // Represents 'Count of opens'
+  usageMinutes?: number; // Represents 'Time spent active'
   category: string;
 }
 

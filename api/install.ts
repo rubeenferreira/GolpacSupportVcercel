@@ -108,12 +108,26 @@ export default async function handler(
         
         webUsageRaw.forEach((incSite: any) => {
              const existing = webMap.get(incSite.domain);
+             
+             // Normalize Incoming Data
+             // Sometimes legacy agents send Time in 'visits'. We prefer 'usageMinutes'.
+             let incVisits = Number(incSite.visits) || 0;
+             let incMinutes = Number(incSite.usageMinutes) || 0;
+
+             // Fallback for legacy agents sending milliseconds in 'visits'
+             if (incVisits > 1000 && incMinutes === 0) {
+                 incMinutes = incVisits / 1000 / 60; // Convert ms to minutes
+                 incVisits = 0; // It was time, not visits
+             }
+
              if (existing) {
-                 existing.visits = (Number(existing.visits) || 0) + (Number(incSite.visits) || 0);
+                 existing.visits = (Number(existing.visits) || 0) + incVisits;
+                 existing.usageMinutes = (Number(existing.usageMinutes) || 0) + incMinutes;
              } else {
                  webMap.set(incSite.domain, {
                      domain: incSite.domain,
-                     visits: Number(incSite.visits) || 0,
+                     visits: incVisits,
+                     usageMinutes: incMinutes,
                      category: incSite.category || 'Browsing'
                  });
              }
