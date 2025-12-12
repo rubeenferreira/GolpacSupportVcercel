@@ -139,7 +139,10 @@ export default async function handler(
             userName: data.userName || 'System User',
             company: data.company || '', // Return the stored company
             appUsage: data.appUsage || [], // Pass through usage data
-            webUsage: data.webUsage || []  // Pass through usage data
+            webUsage: data.webUsage || [],  // Pass through usage data
+            videos: data.videos || [], // Return uploaded videos
+            lastScreenshot: data.lastScreenshot,
+            lastScreenshotTime: data.lastScreenshotTime
         };
     })
     .filter(Boolean)

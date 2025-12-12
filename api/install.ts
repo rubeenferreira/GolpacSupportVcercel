@@ -6,7 +6,7 @@ export default async function handler(
   request: VercelRequest,
   response: VercelResponse
 ) {
-  // Allow any origin to hit the install endpoint (protected by Token anyway)
+  // Allow any origin
   const origin = request.headers.origin || '*';
 
   response.setHeader('Access-Control-Allow-Origin', origin);
@@ -17,7 +17,6 @@ export default async function handler(
     'Content-Type, x-install-token'
   );
 
-  // Handle preflight requests
   if (request.method === 'OPTIONS') {
     return response.status(200).end();
   }
@@ -33,7 +32,6 @@ export default async function handler(
     return response.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Initialize KV client
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -50,31 +48,31 @@ export default async function handler(
     const data = request.body;
     
     // DEBUGGING: Log the incoming payload
-    console.log("Incoming Heartbeat:", JSON.stringify(data));
+    console.log("Incoming Heartbeat Payload:", JSON.stringify(data).substring(0, 500));
     
-    // Basic validation
     if (!data || !data.installId || !data.hostname) {
         return response.status(400).json({ error: "Missing required fields (installId, hostname)" });
     }
 
     const key = `device:${data.installId}`;
-
-    // 1. Add ID to a set of all device IDs (idempotent)
     await kv.sadd('device_ids', data.installId);
 
-    // 2. Fetch existing data for MERGE
+    // Fetch existing data
     const existingData: any = await kv.get(key) || {};
 
-    // 3. Normalization (Handle Go casing)
+    // Normalization
     const appUsageRaw = data.appUsage || data.AppUsage || data.app_usage;
     const webUsageRaw = data.webUsage || data.WebUsage || data.web_usage;
     const userName = data.userName || data.UserName || data.username || data.user;
     const osVersion = data.osVersion || data.OsVersion || data.OSVersion;
-
-    // 4. ACCUMULATION LOGIC
-    // Since the agent sends DELTAS (usage since last tick) and resets, we must SUM values.
     
-    // -- Apps --
+    // Screenshot Logic (Replace existing if provided)
+    const lastScreenshot = data.lastScreenshot || existingData.lastScreenshot;
+    const lastScreenshotTime = data.lastScreenshot ? new Date().toISOString() : existingData.lastScreenshotTime;
+
+    // --- ACCUMULATION LOGIC ---
+
+    // 1. Apps
     let mergedAppUsage = existingData.appUsage || [];
     if (Array.isArray(appUsageRaw) && appUsageRaw.length > 0) {
         const usageMap = new Map();
@@ -84,23 +82,30 @@ export default async function handler(
         
         // Merge incoming deltas
         appUsageRaw.forEach((incApp: any) => {
-            const existing = usageMap.get(incApp.name);
-            if (existing) {
-                // Add new minutes to existing minutes
-                existing.usageMinutes = (Number(existing.usageMinutes) || 0) + (Number(incApp.usageMinutes) || 0);
-            } else {
-                // New app detected
-                usageMap.set(incApp.name, { 
-                    name: incApp.name, 
-                    usageMinutes: Number(incApp.usageMinutes) || 0,
-                    color: incApp.color 
-                });
+            // Helper to get minutes from various possible input fields
+            const minutesIn = Number(incApp.usageMinutes) || 
+                              Number(incApp.usage_minutes) || 
+                              (Number(incApp.usageSeconds) / 60) || 
+                              (Number(incApp.usage_seconds) / 60) || 
+                              0;
+
+            if (minutesIn > 0) {
+                const existing = usageMap.get(incApp.name);
+                if (existing) {
+                    existing.usageMinutes = (Number(existing.usageMinutes) || 0) + minutesIn;
+                } else {
+                    usageMap.set(incApp.name, { 
+                        name: incApp.name, 
+                        usageMinutes: minutesIn,
+                        color: incApp.color 
+                    });
+                }
             }
         });
         mergedAppUsage = Array.from(usageMap.values());
     }
 
-    // -- Websites --
+    // 2. Websites
     let mergedWebUsage = existingData.webUsage || [];
     if (Array.isArray(webUsageRaw) && webUsageRaw.length > 0) {
         const webMap = new Map();
@@ -109,15 +114,17 @@ export default async function handler(
         webUsageRaw.forEach((incSite: any) => {
              const existing = webMap.get(incSite.domain);
              
-             // Normalize Incoming Data
-             // Sometimes legacy agents send Time in 'visits'. We prefer 'usageMinutes'.
              let incVisits = Number(incSite.visits) || 0;
-             let incMinutes = Number(incSite.usageMinutes) || 0;
+             let incMinutes = Number(incSite.usageMinutes) || 
+                              Number(incSite.usage_minutes) || 
+                              (Number(incSite.usageSeconds) / 60) || 
+                              (Number(incSite.usage_seconds) / 60) || 
+                              0;
 
              // Fallback for legacy agents sending milliseconds in 'visits'
              if (incVisits > 1000 && incMinutes === 0) {
-                 incMinutes = incVisits / 1000 / 60; // Convert ms to minutes
-                 incVisits = 0; // It was time, not visits
+                 incMinutes = incVisits / 1000 / 60; 
+                 incVisits = 0; 
              }
 
              if (existing) {
@@ -135,18 +142,18 @@ export default async function handler(
         mergedWebUsage = Array.from(webMap.values());
     }
 
-    // 5. Construct Final Object
     const updatedData = {
-        ...existingData,       // Keep old fields (company, notes, etc.)
-        ...data,               // Update basic fields (IP, OS, etc)
-        appUsage: mergedAppUsage, // Save the ACCUMULATED arrays
+        ...existingData,
+        ...data,
+        appUsage: mergedAppUsage,
         webUsage: mergedWebUsage,
         userName: userName || existingData.userName,
         osVersion: osVersion || existingData.osVersion,
+        lastScreenshot: lastScreenshot,
+        lastScreenshotTime: lastScreenshotTime,
         lastSeen: new Date().toISOString()
     };
 
-    // Store the merged object
     await kv.set(key, updatedData);
 
     return response.status(200).json({ ok: true });

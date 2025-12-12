@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
-import { Device, AppUsageStat, WebUsageStat } from '../types';
+import { Device, AppUsageStat, WebUsageStat, VideoRecording } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle, Image as ImageIcon, Video, PlayCircle, Download } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -29,7 +29,8 @@ const SYSTEM_PROCESS_KEYWORDS = [
   'presentation', 'sql', 'armsvc', 'gamesdk', 'memory', 'malwarebytes', 'tiworker', 
   'extensioncard', 'atk', 'sppsvc', 'lghub', 'nissrv', 'websocket', 'nvcontainer', 
   'adobearm', 'cleanmgr', 'vssvc', 'tabtip', 'filecoauth', 'aimgr', 'tv_', 'splwow',
-  'golpac', 'rundll', 'compattel', 'officeclick', 'video.ui', 'notepad'
+  'golpac', 'rundll', 'compattel', 'officeclick', 'video.ui', 'notepad', 'lockapp', 
+  'smartscreen', 'csrss', 'lsass', 'winlogon', 'services', 'conhost'
 ];
 
 // Map ugly process names to professional titles
@@ -47,16 +48,40 @@ const PRETTY_NAMES: Record<string, string> = {
     'code': 'Visual Studio Code',
     'teams': 'Microsoft Teams',
     'acrobat': 'Adobe Acrobat',
-    'notepad': 'Notepad',
+    'acrord32': 'Adobe Reader',
+    'photoshop': 'Adobe Photoshop',
+    'illustrator': 'Adobe Illustrator',
     'calc': 'Calculator',
     'spotify': 'Spotify',
-    'officeclicktorun': 'Microsoft Office Background',
     'onenote': 'OneNote',
     'mspaint': 'Paint',
     'cmd': 'Command Prompt',
     'powershell': 'PowerShell',
     'teamviewer': 'TeamViewer',
     'onedrive': 'OneDrive'
+};
+
+// Brand Colors for Specific Apps (Overrides the generic palette)
+const BRAND_COLORS: Record<string, string> = {
+    'Microsoft Excel': '#107c41', // Excel Green
+    'Microsoft Word': '#2b579a',  // Word Blue
+    'Microsoft PowerPoint': '#d24726', // PPT Orange
+    'Microsoft Outlook': '#0078d4', // Outlook Blue
+    'Microsoft Teams': '#6264a7', // Teams Purple
+    'Microsoft Edge': '#0078d7', // Edge Blue
+    'Google Chrome': '#facc15', // Chrome Yellow/Gold
+    'Brave Browser': '#f97316', // Brave Orange
+    'Mozilla Firefox': '#f97316', // Firefox Orange
+    'Adobe Acrobat': '#ef4444', // Adobe Red
+    'Adobe Reader': '#ef4444', 
+    'Adobe Photoshop': '#31a8ff',
+    'Spotify': '#1db954', // Spotify Green
+    'Discord': '#5865f2', // Discord Blurple
+    'Steam': '#171a21', // Steam Dark
+    'Visual Studio Code': '#007acc', // VS Code Blue
+    'Slack': '#4a154b', // Slack Purple
+    'WhatsApp': '#25d366', // WhatsApp Green
+    'Zoom': '#2d8cff', // Zoom Blue
 };
 
 // Helper to format decimal minutes into H m s
@@ -74,7 +99,7 @@ const formatDuration = (minutes: number) => {
   return `${s}s`;
 };
 
-// Helper to clean app names (remove .exe, capitalize, map to pretty names)
+// Helper to clean app names
 const cleanAppName = (name: string) => {
     if (!name) return 'Unknown';
     const lowerName = name.toLowerCase().replace('.exe', '');
@@ -86,12 +111,11 @@ const cleanAppName = (name: string) => {
     return lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
 };
 
-// Helper to extract primary domain (e.g. na.myconnectwise.net -> myconnectwise.net)
+// Helper to extract primary domain
 const getPrimaryDomain = (domain: string) => {
     try {
         const parts = domain.split('.');
         if (parts.length > 2) {
-            // Very basic: take last two parts
             return parts.slice(-2).join('.');
         }
         return domain;
@@ -100,57 +124,22 @@ const getPrimaryDomain = (domain: string) => {
     }
 };
 
-// Mock Data Generator (Fallback only)
-const generateMockData = (os: string, dateRange: string) => {
-  const isMac = os === 'macOS';
-  
-  const apps: AppUsageStat[] = isMac ? [
-    { name: 'Xcode', usageMinutes: 340, percentage: 45, color: '#0ea5e9' },
-    { name: 'Chrome', usageMinutes: 180, percentage: 24, color: '#8b5cf6' },
-    { name: 'Slack', usageMinutes: 120, percentage: 16, color: '#f59e0b' },
-    { name: 'Terminal', usageMinutes: 80, percentage: 10, color: '#64748b' },
-    { name: 'Zoom', usageMinutes: 40, percentage: 5, color: '#10b981' },
-  ] : [
-    { name: 'Teams', usageMinutes: 240, percentage: 35, color: '#6366f1' },
-    { name: 'Outlook', usageMinutes: 180, percentage: 26, color: '#0ea5e9' },
-    { name: 'Excel', usageMinutes: 120, percentage: 18, color: '#10b981' },
-    { name: 'Edge', usageMinutes: 90, percentage: 13, color: '#3b82f6' },
-    { name: 'PowerPoint', usageMinutes: 50, percentage: 8, color: '#f97316' },
-  ];
-
-  const websites: WebUsageStat[] = [
-    { domain: 'jira.atlassian.net', visits: 142, category: 'Productivity' },
-    { domain: 'github.com', visits: 89, category: 'Dev' },
-    { domain: 'stackoverflow.com', visits: 64, category: 'Dev' },
-    { domain: 'figma.com', visits: 45, category: 'Design' },
-    { domain: 'docs.google.com', visits: 32, category: 'Productivity' },
-  ];
-
-  return { apps, websites };
-};
-
-// Vibrant but professional palette
-const COLORS = [
-    '#3b82f6', // Bright Blue
-    '#8b5cf6', // Violet
-    '#10b981', // Emerald
-    '#f59e0b', // Amber
-    '#ec4899', // Pink
-    '#06b6d4', // Cyan
-    '#f97316', // Orange
-    '#6366f1', // Indigo
+// Vibrant palette for non-branded apps
+const GENERIC_COLORS = [
+    '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#6366f1'
 ];
 
 const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<void> }> = ({ device, onRefresh }) => {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showDebug, setShowDebug] = useState(false);
     const [showSystemApps, setShowSystemApps] = useState(false);
+    const [showScreenshot, setShowScreenshot] = useState(false);
+    const [activeTab, setActiveTab] = useState<'overview' | 'videos'>('overview');
     
-    // Logic to determine if we have real data or should simulate
     const hasRealData = (device.appUsage && device.appUsage.length > 0) || (device.webUsage && device.webUsage.length > 0);
     const isOnline = device.status === 'Online';
     const missingPayload = isOnline && !hasRealData;
+    const videos = device.videos || [];
 
     const { apps, chartApps, websites } = useMemo(() => {
         if (hasRealData) {
@@ -163,28 +152,31 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
               filteredApps = rawApps.filter(app => {
                  const name = app.name.toLowerCase();
                  const isSystem = SYSTEM_PROCESS_KEYWORDS.some(k => name.includes(k));
-                 // Filter out < 6 seconds noise OR exactly 0 usage if not showing system
+                 // Filter out < 6 seconds noise
                  const isMicro = app.usageMinutes < 0.1; 
-                 
-                 // Keep it if it's NOT system AND NOT micro
                  return !isSystem && !isMicro;
               });
             }
 
-            // 2. Clean Names & Sort by usage (descending)
-            const cleanedApps = filteredApps.map(app => ({
-                ...app,
-                name: cleanAppName(app.name)
-            }));
+            // 2. Clean Names & Sort
+            const cleanedApps = filteredApps.map(app => {
+                const prettyName = cleanAppName(app.name);
+                return {
+                    ...app,
+                    name: prettyName,
+                    // Assign Brand Color if available, otherwise generic
+                    color: BRAND_COLORS[prettyName] || GENERIC_COLORS[0] 
+                };
+            });
             cleanedApps.sort((a, b) => b.usageMinutes - a.usageMinutes);
 
-            // 3. Assign colors based on RANKING (Frontend override to ensure consistency)
+            // 3. Assign generic colors to ranked items if no brand color
             const displayApps = cleanedApps.map((app, idx) => ({
                 ...app,
-                color: COLORS[idx % COLORS.length]
+                color: BRAND_COLORS[app.name] || GENERIC_COLORS[idx % GENERIC_COLORS.length]
             }));
 
-            // 4. Calculate Percentages for the filtered view
+            // 4. Calculate Percentages
             const totalMinutes = displayApps.reduce((sum, item) => sum + (item.usageMinutes || 0), 0);
             if (totalMinutes > 0) {
                 displayApps.forEach(app => {
@@ -192,32 +184,30 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                 });
             }
 
-            // 5. PREPARE PIE CHART DATA (Group small items into "Others")
+            // 5. Pie Chart Data
             let chartData: any[] = [];
-            // Filter out 0 usage items from the chart entirely to look clean
             const activeApps = displayApps.filter(a => a.usageMinutes > 0);
             
-            // Limit chart to top 5 + Others to prevent color mess
-            if (activeApps.length > 5) {
-                const top5 = activeApps.slice(0, 5);
-                const others = activeApps.slice(5);
+            if (activeApps.length > 6) {
+                const topItems = activeApps.slice(0, 6);
+                const others = activeApps.slice(6);
                 const othersMinutes = others.reduce((sum, item) => sum + item.usageMinutes, 0);
                 const othersPercentage = others.reduce((sum, item) => sum + item.percentage, 0);
                 
-                chartData = [...top5];
+                chartData = [...topItems];
                 if (othersMinutes > 0) {
                     chartData.push({
                         name: 'Others',
                         usageMinutes: othersMinutes,
                         percentage: othersPercentage,
-                        color: '#94a3b8' // Grey for others
+                        color: '#94a3b8'
                     });
                 }
             } else {
                 chartData = activeApps;
             }
 
-            // --- Process Web Usage (Group Subdomains) ---
+            // --- Process Web Usage ---
             const rawWebs = device.webUsage || [];
             const domainMap = new Map<string, WebUsageStat>();
 
@@ -225,19 +215,18 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                 const primaryDomain = getPrimaryDomain(site.domain);
                 const existing = domainMap.get(primaryDomain);
 
-                // Handle legacy data where 'visits' was actually duration in ms
-                let duration = site.usageMinutes || 0;
-                let visits = site.visits || 0;
+                let duration = Number(site.usageMinutes) || 0;
+                let visits = Number(site.visits) || 0;
 
-                // Fallback logic for old agent data
+                // Legacy Fallback
                 if (visits > 1000 && duration === 0) {
                      duration = visits / 1000 / 60;
-                     visits = 0; // It was time, not visits
+                     visits = 0; 
                 }
 
                 if (existing) {
-                    existing.usageMinutes = (existing.usageMinutes || 0) + duration;
-                    existing.visits = (existing.visits || 0) + visits;
+                    existing.usageMinutes = (Number(existing.usageMinutes) || 0) + duration;
+                    existing.visits = (Number(existing.visits) || 0) + visits;
                 } else {
                     domainMap.set(primaryDomain, {
                         domain: primaryDomain,
@@ -248,19 +237,14 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                 }
             });
 
-            // Convert map to array and sort
             const groupedWebs = Array.from(domainMap.values());
-            // Sort by duration first, then visits
             groupedWebs.sort((a, b) => (b.usageMinutes || 0) - (a.usageMinutes || 0));
-
 
             return { apps: displayApps, chartApps: chartData, websites: groupedWebs };
         } else {
-            // Fallback to mock data based on OS
-            const mock = generateMockData(device.os, date);
-            return { apps: mock.apps, chartApps: mock.apps, websites: mock.websites };
+            return { apps: [], chartApps: [], websites: [] };
         }
-    }, [device, date, hasRealData, showSystemApps]);
+    }, [device, hasRealData, showSystemApps]);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
@@ -272,10 +256,8 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
         if (!confirm('Are you sure? This will reset all app and web usage history to zero for this device.')) return;
         setIsRefreshing(true);
         try {
-             // Logic to find API Base URL consistent with App.tsx
              const isVercel = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app');
              const API_BASE = isVercel ? '' : 'https://golpac-support-vcercel.vercel.app';
-             
              await fetch(`${API_BASE}/api/devices?action=reset_analytics&id=${device.id}`, { method: 'DELETE' });
              await onRefresh();
         } catch (e) {
@@ -288,21 +270,47 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
 
     return (
         <div className="bg-slate-50 p-4 md:p-6 border-t border-slate-100 shadow-inner animate-in slide-in-from-top-2 duration-300">
-            
-            {/* Controls Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <div>
-                    <h3 className="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                        <LayoutGrid size={16} className="text-brand-500"/>
-                        Usage Analytics
-                    </h3>
-                    <p className="text-[10px] md:text-xs text-slate-500">
-                        {hasRealData ? 'Live reported data' : `Simulated report for ${device.hostname}`}
-                    </p>
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h3 className="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                            <LayoutGrid size={16} className="text-brand-500"/>
+                            Usage Analytics
+                        </h3>
+                        <p className="text-[10px] md:text-xs text-slate-500">
+                            {hasRealData ? 'Live reported data' : `Waiting for first report...`}
+                        </p>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex items-center bg-white p-1 rounded-lg border border-slate-200">
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'overview' ? 'bg-slate-100 text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Overview
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('videos')}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${activeTab === 'videos' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <Video size={12} />
+                            Recordings ({videos.length})
+                        </button>
+                    </div>
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
-                     {/* Debug Button */}
+                    {device.lastScreenshot && (
+                         <button 
+                            onClick={() => setShowScreenshot(true)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg border border-indigo-700 shadow-sm flex items-center gap-2 text-xs font-medium transition-all"
+                         >
+                             <ImageIcon size={14} />
+                             View Screen
+                         </button>
+                    )}
+
                     <button 
                         onClick={() => setShowDebug(!showDebug)}
                         className={`p-1.5 rounded-lg border transition-all duration-300 ${showDebug || missingPayload ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'}`}
@@ -316,13 +324,10 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                             onClick={handleRefresh}
                             disabled={isRefreshing}
                             className={`p-1.5 rounded-md transition-all duration-300 ${isRefreshing ? 'text-brand-500 rotate-180' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-50'}`}
-                            title="Refresh Analytics"
                         >
                             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
                         </button>
-                        
                         <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                        
                         <button 
                             onClick={handleResetAnalytics}
                             disabled={isRefreshing}
@@ -331,23 +336,34 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                         >
                             <RotateCcw size={16} />
                         </button>
-
-                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
-
-                        <Calendar size={16} className="text-slate-400" />
-                        <span className="text-xs font-medium text-slate-600 hidden sm:inline">Date:</span>
-                        <input 
-                            type="date" 
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            disabled={hasRealData} 
-                            className={`text-sm text-slate-700 focus:outline-none border-none bg-transparent ${hasRealData ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        />
                     </div>
                 </div>
             </div>
 
-            {/* DEBUG VIEW */}
+            {/* Screenshot Modal */}
+            {showScreenshot && device.lastScreenshot && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowScreenshot(false)}>
+                    <div className="bg-slate-900 p-2 rounded-xl max-w-5xl w-full max-h-[90vh] flex flex-col relative" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center px-2 py-2 mb-2 text-white">
+                            <div>
+                                <h3 className="font-bold text-sm">{device.hostname} - Screen Capture</h3>
+                                <p className="text-xs text-slate-400">Captured: {device.lastScreenshotTime ? new Date(device.lastScreenshotTime).toLocaleString() : 'Unknown'}</p>
+                            </div>
+                            <button onClick={() => setShowScreenshot(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto rounded-lg bg-black border border-slate-700 flex items-center justify-center">
+                            <img 
+                                src={`data:image/png;base64,${device.lastScreenshot}`} 
+                                alt="Screen Capture" 
+                                className="max-w-full max-h-full object-contain"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {(showDebug || missingPayload) && (
                 <div className="mb-6 bg-slate-900 rounded-xl p-4 text-slate-300 border border-slate-700 shadow-inner overflow-hidden animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center justify-between mb-2 border-b border-slate-700 pb-2">
@@ -358,15 +374,15 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                         {missingPayload && (
                             <span className="text-xs font-bold text-yellow-500 flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded">
                                 <AlertTriangle size={12} />
-                                WARNING: Device Online but Missing Usage Payload
+                                PAYLOAD EMPTY
                             </span>
                         )}
                     </div>
                     {missingPayload && (
-                        <div className="mb-3 text-[11px] text-slate-400 bg-slate-800 p-2 rounded border border-slate-700">
-                            <p><strong>Diagnosis:</strong> The heartbeat is working (Last Seen is updating), but the <code>appUsage</code> array is empty or undefined.</p>
-                            <p className="mt-1"><strong>Fix:</strong> Update your Client <code>sendInstallHeartbeat</code> function to await <code>invoke('get_usage_deltas')</code> and include that data in the <code>fetch</code> body.</p>
-                        </div>
+                         <div className="mb-3 text-[11px] text-slate-400 bg-slate-800 p-2 rounded border border-slate-700">
+                             <p><strong>Status:</strong> Device is ONLINE but usage data is empty.</p>
+                             <p className="mt-1">The Agent is sending heartbeat but missing the usage payload.</p>
+                         </div>
                     )}
                     <pre className="font-mono text-[10px] md:text-xs overflow-x-auto max-h-60 custom-scrollbar">
                         {JSON.stringify(device, null, 2)}
@@ -374,127 +390,163 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {/* App Usage Chart */}
-                <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex justify-between items-center mb-4">
-                        <h4 className="font-semibold text-sm md:text-base text-slate-800 flex items-center gap-2">
-                            <PieChartIcon size={18} className="text-purple-500" />
-                            Most Used Apps
-                        </h4>
-                        <button 
-                            onClick={() => setShowSystemApps(!showSystemApps)}
-                            className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${showSystemApps ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
-                        >
-                            {showSystemApps ? <Layers size={12}/> : <EyeOff size={12}/>}
-                            {showSystemApps ? 'Showing All / System' : 'System Hidden'}
-                        </button>
-                    </div>
+            {/* Content Switcher */}
+            {activeTab === 'videos' ? (
+                <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-right-2">
+                    <h4 className="font-semibold text-sm md:text-base text-slate-800 mb-4 flex items-center gap-2">
+                        <Video size={18} className="text-indigo-500" />
+                        Uploaded Recordings
+                    </h4>
+                    {videos.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {videos.map((vid, idx) => (
+                                <div key={idx} className="border border-slate-200 rounded-lg p-3 hover:border-indigo-200 transition-all group">
+                                    <div className="aspect-video bg-slate-100 rounded mb-2 flex items-center justify-center relative overflow-hidden">
+                                        <Video size={32} className="text-slate-300" />
+                                        <a href={vid.url} target="_blank" rel="noreferrer" className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors">
+                                             <PlayCircle size={40} className="text-white opacity-0 group-hover:opacity-100 drop-shadow-md scale-75 group-hover:scale-100 transition-all" />
+                                        </a>
+                                    </div>
+                                    <div className="flex justify-between items-start">
+                                        <div className="overflow-hidden">
+                                            <p className="text-xs font-medium text-slate-700 truncate" title={vid.filename}>{vid.filename}</p>
+                                            <p className="text-[10px] text-slate-400">{new Date(vid.timestamp).toLocaleString()}</p>
+                                        </div>
+                                        <a href={vid.url} download className="text-slate-400 hover:text-indigo-600">
+                                            <Download size={14} />
+                                        </a>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="h-48 flex flex-col items-center justify-center text-slate-400 text-sm italic border-2 border-dashed border-slate-100 rounded-lg">
+                            <Video size={32} className="mb-2 opacity-50" />
+                            <p>No recordings uploaded yet.</p>
+                            <p className="text-xs mt-1">Configure your agent to upload mp4 segments.</p>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-left-2">
+                    {/* App Usage */}
+                    <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="font-semibold text-sm md:text-base text-slate-800 flex items-center gap-2">
+                                <PieChartIcon size={18} className="text-purple-500" />
+                                Most Used Apps
+                            </h4>
+                            <button 
+                                onClick={() => setShowSystemApps(!showSystemApps)}
+                                className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${showSystemApps ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
+                            >
+                                {showSystemApps ? <Layers size={12}/> : <EyeOff size={12}/>}
+                                {showSystemApps ? 'Showing System Noise' : 'System Hidden'}
+                            </button>
+                        </div>
 
-                    {apps.length > 0 ? (
-                    <div className="flex flex-col sm:flex-row items-center gap-6">
-                        {chartApps.length > 0 && (
-                            <div className="h-40 w-40 md:h-48 md:w-48 shrink-0">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={chartApps}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={35}
-                                            outerRadius={60}
-                                            paddingAngle={5}
-                                            dataKey="percentage"
-                                        >
-                                            {chartApps.map((entry: any, index: number) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <RechartsTooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                        {apps.length > 0 ? (
+                        <div className="flex flex-col sm:flex-row items-center gap-6">
+                            {chartApps.length > 0 && (
+                                <div className="h-40 w-40 md:h-48 md:w-48 shrink-0">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={chartApps}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={35}
+                                                outerRadius={60}
+                                                paddingAngle={5}
+                                                dataKey="percentage"
+                                            >
+                                                {chartApps.map((entry: any, index: number) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <RechartsTooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )}
+                            <div className="flex-1 w-full max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                <ul className="space-y-3">
+                                    {apps.map((app, idx) => (
+                                        <li key={idx} className="flex items-center justify-between text-xs md:text-sm group hover:bg-slate-50 p-1 rounded-lg transition-colors">
+                                            <div className="flex items-center gap-2 truncate">
+                                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: app.color }} />
+                                                <span className="font-medium truncate max-w-[100px] sm:max-w-none text-slate-700" title={app.name}>{app.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 md:gap-4 text-slate-500">
+                                                <span className="text-[10px] md:text-xs flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded tabular-nums">
+                                                    <Clock size={10} /> {formatDuration(app.usageMinutes)}
+                                                </span>
+                                                {app.percentage > 0 && <span className="font-bold w-8 text-right">{app.percentage}%</span>}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                        ) : (
+                            <div className="h-48 flex items-center justify-center text-slate-400 text-sm italic text-center px-4">
+                                No significant usage detected.<br/>
+                                <span className="text-xs text-slate-300 mt-1">
+                                    {showSystemApps ? 'Even system processes are inactive.' : 'Waiting for focus time tracking...'}
+                                </span>
                             </div>
                         )}
-                        {/* Scrollable list for ALL apps */}
-                        <div className="flex-1 w-full max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                            <ul className="space-y-3">
-                                {apps.map((app, idx) => (
-                                    <li key={idx} className="flex items-center justify-between text-xs md:text-sm group hover:bg-slate-50 p-1 rounded-lg transition-colors">
-                                        <div className="flex items-center gap-2 truncate">
-                                            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${app.usageMinutes === 0 ? 'bg-slate-300' : ''}`} style={{ backgroundColor: app.usageMinutes > 0 ? app.color : undefined }} />
-                                            <span className={`font-medium truncate max-w-[100px] sm:max-w-none ${app.usageMinutes === 0 ? 'text-slate-400 italic' : 'text-slate-700'}`} title={app.name}>{app.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 md:gap-4 text-slate-500">
-                                            <span className="text-[10px] md:text-xs flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded tabular-nums">
-                                                <Clock size={10} /> {formatDuration(app.usageMinutes)}
-                                            </span>
-                                            {app.usageMinutes > 0 && <span className="font-bold w-10 text-right">{app.percentage.toFixed(0)}%</span>}
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
                     </div>
-                    ) : (
-                        <div className="h-48 flex items-center justify-center text-slate-400 text-sm italic text-center px-4">
-                            No significant user apps detected.<br/>
-                            <span className="text-xs text-slate-300 mt-1">
-                                {showSystemApps ? 'Even system processes are inactive.' : 'System processes hidden.'}
-                            </span>
-                        </div>
-                    )}
-                </div>
 
-                {/* Web Usage List */}
-                <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <h4 className="font-semibold text-sm md:text-base text-slate-800 mb-4 flex items-center gap-2">
-                        <Globe size={18} className="text-blue-500" />
-                        Most Viewed Websites
-                    </h4>
-                    {websites.length > 0 ? (
-                    <div className="overflow-hidden">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
-                                <tr>
-                                    <th className="px-3 py-2">Domain</th>
-                                    <th className="px-3 py-2 text-right">Time Active</th>
-                                    <th className="px-3 py-2 text-right">Visits</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {websites.slice(0, 10).map((site, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-3 py-2.5 font-medium text-slate-700 flex items-center gap-2 max-w-[150px] truncate">
-                                            <img 
-                                                src={`https://www.google.com/s2/favicons?domain=${site.domain}&sz=32`} 
-                                                alt="" 
-                                                className="w-4 h-4 opacity-70 shrink-0"
-                                            />
-                                            <span className="truncate">{site.domain}</span>
-                                        </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-slate-600 text-xs">
-                                            {formatDuration(site.usageMinutes || 0)}
-                                        </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-slate-500 text-xs">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <MousePointerClick size={10} />
-                                                {site.visits?.toLocaleString() || 0}
-                                            </div>
-                                        </td>
+                    {/* Web Usage */}
+                    <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 className="font-semibold text-sm md:text-base text-slate-800 mb-4 flex items-center gap-2">
+                            <Globe size={18} className="text-blue-500" />
+                            Most Viewed Websites
+                        </h4>
+                        {websites.length > 0 ? (
+                        <div className="overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                                    <tr>
+                                        <th className="px-3 py-2">Domain</th>
+                                        <th className="px-3 py-2 text-right">Time</th>
+                                        <th className="px-3 py-2 text-right">Visits</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    ) : (
-                        <div className="h-48 flex items-center justify-center text-slate-400 text-sm italic">
-                            No web usage data recorded.
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {websites.slice(0, 10).map((site, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-3 py-2.5 font-medium text-slate-700 flex items-center gap-2 max-w-[150px] truncate">
+                                                <img 
+                                                    src={`https://www.google.com/s2/favicons?domain=${site.domain}&sz=32`} 
+                                                    alt="" 
+                                                    className="w-4 h-4 opacity-70 shrink-0"
+                                                />
+                                                <span className="truncate">{site.domain}</span>
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-slate-600 text-xs">
+                                                {formatDuration(site.usageMinutes || 0)}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-slate-500 text-xs">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <MousePointerClick size={10} />
+                                                    {site.visits?.toLocaleString() || 0}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
+                        ) : (
+                            <div className="h-48 flex items-center justify-center text-slate-400 text-sm italic">
+                                No web usage recorded.
+                            </div>
+                        )}
+                    </div>
                 </div>
-
-            </div>
+            )}
         </div>
     );
 };
@@ -540,7 +592,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">
-            {/* Company Filter Dropdown */}
             <div className="relative w-full sm:w-auto">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Filter size={16} className="text-slate-400" />
@@ -560,7 +611,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                 </div>
             </div>
 
-            {/* Search Input */}
             <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <input 
@@ -574,7 +624,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
         </div>
       </div>
 
-      {/* MOBILE CARD VIEW (Visible only on small screens) */}
+      {/* MOBILE CARD VIEW */}
       <div className="block md:hidden bg-slate-50/50 p-4 space-y-3">
           {filteredDevices.map(device => (
               <div key={device.id} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
@@ -605,7 +655,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                       </div>
                   </div>
                   
-                  {/* Actions Bar for Mobile Card */}
                   {!isReadOnly && expandedDeviceId !== device.id && (
                       <div className="border-t border-slate-100 flex divide-x divide-slate-100">
                           <button 
@@ -654,12 +703,12 @@ export const DeviceList: React.FC<DeviceListProps> = ({
           )}
       </div>
 
-      {/* DESKTOP TABLE VIEW (Hidden on mobile) */}
+      {/* DESKTOP TABLE VIEW */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-600 font-medium">
                 <tr>
-                    <th className="px-4 py-3 w-8"></th> {/* Expansion Chevron */}
+                    <th className="px-4 py-3 w-8"></th>
                     <th className="px-6 py-3">Hostname</th>
                     <th className="px-6 py-3">Group / Company</th>
                     <th className="px-6 py-3">User</th>
@@ -763,7 +812,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
         Showing {filteredDevices.length} of {devices.length} devices
       </div>
 
-      {/* Group Assignment Modal (Responsive) */}
+      {/* Group Assignment Modal */}
       {!isReadOnly && editingDevice && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingDevice(null)} />

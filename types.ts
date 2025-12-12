@@ -28,6 +28,13 @@ export interface WebUsageStat {
   category: string;
 }
 
+export interface VideoRecording {
+  url: string;
+  timestamp: string; // ISO String
+  filename: string;
+  size?: number;
+}
+
 export interface Device {
   id: string;
   hostname: string;
@@ -42,6 +49,9 @@ export interface Device {
   company?: string; // The group/company assignment
   appUsage?: AppUsageStat[]; // Real data from agent
   webUsage?: WebUsageStat[]; // Real data from agent
+  videos?: VideoRecording[]; // Uploaded recordings
+  lastScreenshot?: string; // Base64 encoded PNG
+  lastScreenshotTime?: string; // Timestamp of the screenshot
 }
 
 export interface FleetStats {
