@@ -137,15 +137,14 @@ const VideoPlayer: React.FC<{ url: string; filename: string }> = ({ url, filenam
             <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-4 text-center">
                 <AlertTriangle size={24} className="mb-2 text-yellow-500" />
                 <p className="text-xs font-medium text-white mb-1">Playback Failed</p>
-                <p className="text-[10px] mb-3">Browser couldn't decode this file.</p>
+                <p className="text-[10px] mb-3">Codec or browser error.</p>
                 <a 
                     href={url} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors"
+                    download
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors"
                 >
-                    <ExternalLink size={12} />
-                    Open Directly
+                    <Download size={12} />
+                    Download File
                 </a>
             </div>
         );
@@ -607,468 +606,147 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     onDeleteDevice, 
     onAssignCompany, 
     onRefreshData,
-    isReadOnly = false 
+    isReadOnly 
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCompanyFilter, setSelectedCompanyFilter] = useState('');
-  const [editingDevice, setEditingDevice] = useState<Device | null>(null);
-  const [expandedDeviceId, setExpandedDeviceId] = useState<string | null>(null);
-  const [showConnectModal, setShowConnectModal] = useState(false);
-  const [copyFeedback, setCopyFeedback] = useState<string|null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [expandedDeviceId, setExpandedDeviceId] = useState<string | null>(null);
 
-  const filteredDevices = devices.filter(d => {
-    const matchesSearch = d.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.ipAddress.includes(searchTerm) ||
-    (d.company && d.company.toLowerCase().includes(searchTerm.toLowerCase()));
+    const filteredDevices = useMemo(() => {
+        return devices.filter(d => 
+            d.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            d.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (d.company || '').toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [devices, searchTerm]);
 
-    const matchesCompany = selectedCompanyFilter === '' || d.company === selectedCompanyFilter;
+    const toggleExpand = (id: string) => {
+        setExpandedDeviceId(expandedDeviceId === id ? null : id);
+    };
 
-    return matchesSearch && matchesCompany;
-  });
-
-  const toggleExpand = (id: string) => {
-      setExpandedDeviceId(prev => prev === id ? null : id);
-  };
-
-  const copyToClipboard = (text: string, type: string) => {
-      navigator.clipboard.writeText(text);
-      setCopyFeedback(type);
-      setTimeout(() => setCopyFeedback(null), 2000);
-  };
-
-  // Determine API base for display
-  // Use the hardcoded user Vercel URL for localhost fallback
-  const apiBase = useMemo(() => {
-    if (typeof window === 'undefined') return 'https://golpac-support-vcercel.vercel.app';
-    const origin = window.location.origin;
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        return 'https://golpac-support-vcercel.vercel.app';
-    }
-    return origin;
-  }, []);
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full animate-in slide-in-from-bottom-4 duration-500">
-      
-      {/* Header & Filter */}
-      <div className="p-4 border-b border-slate-100 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Monitor size={20} className="text-slate-500"/>
-                {isReadOnly ? 'Assigned Devices' : 'All Devices'}
-            </h2>
-            
-            {!isReadOnly && (
-                <button 
-                    onClick={() => setShowConnectModal(true)}
-                    className="text-xs font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg border border-brand-100 transition-colors"
-                >
-                    <Terminal size={14} />
-                    Agent Setup Info
-                </button>
-            )}
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative w-full sm:w-auto">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Filter size={16} className="text-slate-400" />
-                </div>
-                <select
-                    value={selectedCompanyFilter}
-                    onChange={(e) => setSelectedCompanyFilter(e.target.value)}
-                    className="pl-9 pr-8 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-48 appearance-none bg-white text-slate-700"
-                >
-                    <option value="">All Companies</option>
-                    {companies.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                    ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <ChevronDown size={14} className="text-slate-400" />
-                </div>
-            </div>
-
-            <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                <input 
+    return (
+        <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                 <Search className="text-slate-400" size={20} />
+                 <input 
                     type="text"
-                    placeholder="Search hostname, user..."
-                    className="pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 w-full"
+                    placeholder="Search devices, users, or companies..."
+                    className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                    onChange={e => setSearchTerm(e.target.value)}
+                 />
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                {/* Desktop Header */}
+                <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <div className="col-span-3">Device / User</div>
+                    <div className="col-span-2">Status</div>
+                    <div className="col-span-2">OS & Ver</div>
+                    <div className="col-span-3">Company</div>
+                    <div className="col-span-2 text-right">Actions</div>
+                </div>
+
+                {/* List Items */}
+                {filteredDevices.length > 0 ? (
+                    <div className="divide-y divide-slate-100">
+                        {filteredDevices.map(device => (
+                            <React.Fragment key={device.id}>
+                                <div 
+                                    className={`
+                                        flex flex-col md:grid md:grid-cols-12 gap-4 p-4 transition-all cursor-pointer
+                                        ${expandedDeviceId === device.id ? 'bg-slate-50' : 'hover:bg-slate-50/50'}
+                                    `}
+                                    onClick={() => toggleExpand(device.id)}
+                                >
+                                    {/* Mobile Top Row */}
+                                    <div className="col-span-3 flex items-center gap-3">
+                                        <div className={`
+                                            w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 shrink-0
+                                            ${device.os === 'Windows' ? 'bg-blue-50 text-blue-600' : ''}
+                                            ${device.os === 'macOS' ? 'bg-purple-50 text-purple-600' : ''}
+                                            ${device.os === 'Linux' ? 'bg-orange-50 text-orange-600' : ''}
+                                            ${device.os === 'Unknown' ? 'bg-slate-100' : ''}
+                                        `}>
+                                            <Monitor size={20} />
+                                        </div>
+                                        <div className="overflow-hidden">
+                                            <p className="font-semibold text-slate-800 text-sm truncate" title={device.hostname}>{device.hostname}</p>
+                                            <p className="text-xs text-slate-500 flex items-center gap-1">
+                                                <UserIcon size={10} />
+                                                {device.userName}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="col-span-2 flex items-center">
+                                        <Badge status={device.status} />
+                                    </div>
+
+                                    <div className="col-span-2 flex flex-col justify-center text-xs text-slate-600">
+                                        <span className="font-medium">{device.os} {device.osVersion}</span>
+                                        <span className="text-slate-400">v{device.appVersion}</span>
+                                    </div>
+
+                                    <div className="col-span-3 flex items-center" onClick={e => e.stopPropagation()}>
+                                        {isReadOnly ? (
+                                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                <Building2 size={14} className="text-slate-400"/>
+                                                {device.company || <span className="text-slate-400 italic">Unassigned</span>}
+                                            </div>
+                                        ) : (
+                                            <div className="relative group w-full max-w-[200px]">
+                                                <select 
+                                                    className="w-full appearance-none bg-white border border-slate-200 text-slate-700 text-xs rounded-lg py-1.5 pl-2 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer hover:border-slate-300"
+                                                    value={device.company || ''}
+                                                    onChange={(e) => onAssignCompany(device.id, e.target.value)}
+                                                >
+                                                    <option value="" disabled>Assign Company</option>
+                                                    {companies.map(c => (
+                                                        <option key={c} value={c}>{c}</option>
+                                                    ))}
+                                                </select>
+                                                <Building2 size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="col-span-2 flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+                                        <button 
+                                            onClick={() => toggleExpand(device.id)}
+                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                            title="View Analytics"
+                                        >
+                                            {expandedDeviceId === device.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                        </button>
+                                        {!isReadOnly && (
+                                            <button 
+                                                onClick={() => {
+                                                    if(confirm('Delete this device?')) onDeleteDevice(device.id);
+                                                }}
+                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Delete Device"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                {expandedDeviceId === device.id && (
+                                    <div className="border-t border-slate-100">
+                                        <ExpandedDeviceView device={device} onRefresh={onRefreshData} />
+                                    </div>
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-12 text-center text-slate-400">
+                         <Search size={32} className="mx-auto mb-2 opacity-50" />
+                         <p>No devices found.</p>
+                    </div>
+                )}
             </div>
         </div>
-      </div>
-
-      {/* MOBILE CARD VIEW */}
-      <div className="block md:hidden bg-slate-50/50 p-4 space-y-3">
-          {filteredDevices.map(device => (
-              <div key={device.id} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                  <div 
-                    className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50"
-                    onClick={() => toggleExpand(device.id)}
-                  >
-                      <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                              <span className="font-bold text-slate-800">{device.hostname}</span>
-                              <Badge status={device.status} />
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-slate-500">
-                              <span className="flex items-center gap-1">
-                                  <UserIcon size={12} /> {device.userName}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                  {device.os} {device.osVersion}
-                              </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
-                             <Building2 size={10} />
-                             {device.company || 'Unassigned'}
-                          </div>
-                      </div>
-                      <div className="text-slate-400">
-                          {expandedDeviceId === device.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                      </div>
-                  </div>
-                  
-                  {!isReadOnly && expandedDeviceId !== device.id && (
-                      <div className="border-t border-slate-100 flex divide-x divide-slate-100">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setEditingDevice(device); }}
-                            className="flex-1 py-3 text-xs font-medium text-slate-600 flex items-center justify-center gap-2 hover:bg-slate-50"
-                          >
-                              <Edit2 size={14} /> Assign Group
-                          </button>
-                          <button 
-                             onClick={(e) => { 
-                                 e.stopPropagation(); 
-                                 if(confirm('Are you sure you want to remove this device?')) onDeleteDevice(device.id); 
-                             }}
-                             className="flex-1 py-3 text-xs font-medium text-red-500 flex items-center justify-center gap-2 hover:bg-red-50"
-                          >
-                              <Trash2 size={14} /> Remove
-                          </button>
-                      </div>
-                  )}
-
-                  {expandedDeviceId === device.id && (
-                      <div className="border-t border-slate-100">
-                           <ExpandedDeviceView device={device} onRefresh={onRefreshData} />
-                           {!isReadOnly && (
-                               <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-                                   <button 
-                                      onClick={() => setEditingDevice(device)}
-                                      className="flex-1 bg-white border border-slate-200 py-2 rounded-lg text-sm font-medium text-slate-700 shadow-sm"
-                                    >
-                                       Edit Group
-                                   </button>
-                                   <button 
-                                      onClick={() => { if(confirm('Delete?')) onDeleteDevice(device.id); }}
-                                      className="flex-1 bg-red-50 border border-red-200 py-2 rounded-lg text-sm font-medium text-red-600 shadow-sm"
-                                    >
-                                       Remove
-                                   </button>
-                               </div>
-                           )}
-                      </div>
-                  )}
-              </div>
-          ))}
-          {filteredDevices.length === 0 && (
-              <div className="text-center py-10 flex flex-col items-center justify-center">
-                  <div className="text-slate-400 text-sm mb-4">No devices found.</div>
-                  <button 
-                      onClick={() => setShowConnectModal(true)}
-                      className="bg-brand-600 hover:bg-brand-700 text-white px-5 py-3 rounded-xl shadow-lg shadow-brand-500/30 flex items-center gap-2 font-bold transition-all"
-                  >
-                      <Terminal size={18} />
-                      Get Connection Info
-                  </button>
-              </div>
-          )}
-      </div>
-
-      {/* DESKTOP TABLE VIEW */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-slate-600 font-medium">
-                <tr>
-                    <th className="px-4 py-3 w-8"></th>
-                    <th className="px-6 py-3">Hostname</th>
-                    <th className="px-6 py-3">Group / Company</th>
-                    <th className="px-6 py-3">User</th>
-                    <th className="px-6 py-3">OS</th>
-                    <th className="px-6 py-3">App Ver.</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3">Last Seen</th>
-                    {!isReadOnly && <th className="px-6 py-3 text-right">Actions</th>}
-                </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-                {filteredDevices.map((device) => (
-                    <React.Fragment key={device.id}>
-                        <tr 
-                            className={`transition-colors cursor-pointer ${expandedDeviceId === device.id ? 'bg-blue-50/50' : 'hover:bg-slate-50'}`}
-                            onClick={() => toggleExpand(device.id)}
-                        >
-                            <td className="px-4 py-3 text-slate-400">
-                                {expandedDeviceId === device.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </td>
-                            <td className="px-6 py-3 font-medium text-slate-900">{device.hostname}</td>
-                            <td className="px-6 py-3">
-                                {device.company ? (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                        <Building2 size={10} />
-                                        {device.company}
-                                    </span>
-                                ) : (
-                                    <span className="text-slate-400 text-xs italic">Unassigned</span>
-                                )}
-                            </td>
-                            <td className="px-6 py-3 text-slate-600">{device.userName}</td>
-                            <td className="px-6 py-3">
-                                <div className="flex items-center gap-2">
-                                    <Badge status={device.os} />
-                                    <span className="text-slate-400 text-xs hidden lg:inline">{device.osVersion}</span>
-                                </div>
-                            </td>
-                            <td className="px-6 py-3 text-slate-600">
-                                <div className="flex items-center gap-1">
-                                    <Hash size={12} className="text-slate-400" />
-                                    {device.appVersion}
-                                </div>
-                            </td>
-                            <td className="px-6 py-3">
-                                <Badge status={device.status} />
-                            </td>
-                            <td className="px-6 py-3 text-slate-500">
-                                <div className="flex items-center gap-2">
-                                    <Calendar size={14} className="text-slate-400"/>
-                                    <span className="text-xs whitespace-nowrap">{new Date(device.lastSeen).toLocaleDateString()}</span>
-                                </div>
-                            </td>
-                            {!isReadOnly && (
-                                <td className="px-6 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex justify-end gap-1">
-                                        <button 
-                                            onClick={() => setEditingDevice(device)}
-                                            className="text-slate-400 hover:text-brand-600 p-1.5 hover:bg-brand-50 rounded-lg transition-colors"
-                                            title="Edit Group Assignment"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button 
-                                            onClick={() => {
-                                                if(confirm('Are you sure you want to remove this device?')) {
-                                                    onDeleteDevice(device.id);
-                                                }
-                                            }}
-                                            className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Remove Device"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </td>
-                            )}
-                        </tr>
-                        {expandedDeviceId === device.id && (
-                            <tr>
-                                <td colSpan={isReadOnly ? 8 : 9} className="p-0">
-                                    <ExpandedDeviceView device={device} onRefresh={onRefreshData} />
-                                </td>
-                            </tr>
-                        )}
-                    </React.Fragment>
-                ))}
-                {filteredDevices.length === 0 && (
-                    <tr>
-                        <td colSpan={isReadOnly ? 8 : 9} className="px-6 py-12">
-                             <div className="flex flex-col items-center justify-center">
-                                  <div className="text-slate-400 text-sm mb-4">
-                                      {devices.length === 0 
-                                          ? "No devices found. Connect your first agent to get started." 
-                                          : `No devices found matching your filters.`}
-                                  </div>
-                                  {devices.length === 0 && (
-                                      <button 
-                                          onClick={() => setShowConnectModal(true)}
-                                          className="bg-brand-600 hover:bg-brand-700 text-white px-5 py-3 rounded-xl shadow-lg shadow-brand-500/30 flex items-center gap-2 font-bold transition-all hover:scale-105 active:scale-95"
-                                      >
-                                          <Terminal size={18} />
-                                          Get Connection Info
-                                      </button>
-                                  )}
-                             </div>
-                        </td>
-                    </tr>
-                )}
-            </tbody>
-        </table>
-      </div>
-      <div className="hidden md:block p-4 border-t border-slate-100 text-xs text-slate-400 bg-slate-50">
-        Showing {filteredDevices.length} of {devices.length} devices
-      </div>
-
-      {/* Group Assignment Modal */}
-      {!isReadOnly && editingDevice && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingDevice(null)} />
-              <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 animate-in zoom-in-95 duration-200">
-                   <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-                       <h3 className="font-bold text-slate-800">Assign Group</h3>
-                       <button onClick={() => setEditingDevice(null)} className="text-slate-400 hover:text-slate-600">
-                           <X size={18} />
-                       </button>
-                   </div>
-                   <div className="p-6">
-                       <p className="text-sm text-slate-500 mb-4">
-                           Assign <span className="font-semibold text-slate-800">{editingDevice.hostname}</span> to a company group:
-                       </p>
-                       <div className="space-y-3">
-                           {companies.map(company => (
-                               <button
-                                   key={company}
-                                   onClick={() => {
-                                       onAssignCompany(editingDevice.id, company);
-                                       setEditingDevice(null);
-                                   }}
-                                   className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                                       editingDevice.company === company 
-                                       ? 'bg-brand-50 border-brand-200 text-brand-700' 
-                                       : 'bg-white border-slate-200 text-slate-600 hover:border-brand-200 hover:shadow-sm'
-                                   }`}
-                               >
-                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                       editingDevice.company === company ? 'border-brand-500' : 'border-slate-300'
-                                   }`}>
-                                       {editingDevice.company === company && <div className="w-2 h-2 rounded-full bg-brand-500" />}
-                                   </div>
-                                   <span className="font-medium">{company}</span>
-                               </button>
-                           ))}
-                       </div>
-                   </div>
-              </div>
-          </div>
-      )}
-
-      {/* Connection Info Modal */}
-      {showConnectModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowConnectModal(false)} />
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative z-10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-                   <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                       <div className="flex items-center gap-2">
-                           <Terminal size={20} className="text-slate-700" />
-                           <h3 className="font-bold text-slate-800">Backend Connection Details</h3>
-                       </div>
-                       <button onClick={() => setShowConnectModal(false)} className="text-slate-400 hover:text-slate-600">
-                           <X size={20} />
-                       </button>
-                   </div>
-                   <div className="p-6 overflow-y-auto">
-                        <p className="text-sm text-slate-600 mb-6">
-                            Use these parameters to configure your remote agents (Rust/Go) to report data to this panel.
-                        </p>
-
-                        <div className="space-y-6">
-                            {/* URLs */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Endpoints</label>
-                                <div className="bg-slate-900 rounded-lg p-3 relative group">
-                                     <div className="text-xs text-slate-400 mb-1">Upload Video Route</div>
-                                     <div className="font-mono text-sm text-green-400 break-all">{apiBase}/api/upload</div>
-                                     <button 
-                                        onClick={() => copyToClipboard(`${apiBase}/api/upload`, 'url_up')}
-                                        className="absolute right-2 top-2 p-1.5 text-slate-400 hover:text-white rounded bg-white/10 opacity-0 group-hover:opacity-100 transition-all"
-                                     >
-                                        {copyFeedback === 'url_up' ? <Check size={14}/> : <Copy size={14}/>}
-                                     </button>
-                                </div>
-                                <div className="bg-slate-900 rounded-lg p-3 relative group">
-                                     <div className="text-xs text-slate-400 mb-1">Heartbeat / Install Route</div>
-                                     <div className="font-mono text-sm text-blue-400 break-all">{apiBase}/api/install</div>
-                                     <button 
-                                        onClick={() => copyToClipboard(`${apiBase}/api/install`, 'url_in')}
-                                        className="absolute right-2 top-2 p-1.5 text-slate-400 hover:text-white rounded bg-white/10 opacity-0 group-hover:opacity-100 transition-all"
-                                     >
-                                        {copyFeedback === 'url_in' ? <Check size={14}/> : <Copy size={14}/>}
-                                     </button>
-                                </div>
-                            </div>
-
-                            {/* AUTH */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Authentication</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
-                                        <div className="text-xs text-slate-500 mb-1">Header Name</div>
-                                        <div className="font-mono text-sm font-bold text-slate-800">x-install-token</div>
-                                    </div>
-                                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg flex justify-between items-center group">
-                                        <div>
-                                            <div className="text-xs text-slate-500 mb-1">Token Value (Default)</div>
-                                            <div className="font-mono text-sm font-bold text-slate-800">dxTLRLGrGg3Jh2ZujTLaavsg</div>
-                                        </div>
-                                        <button 
-                                            onClick={() => copyToClipboard('dxTLRLGrGg3Jh2ZujTLaavsg', 'token')}
-                                            className="text-slate-400 hover:text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            {copyFeedback === 'token' ? <Check size={14}/> : <Copy size={14}/>}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                             {/* ENV VAR - ADDED FOR CONSISTENCY */}
-                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Environment Variable</label>
-                                <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 flex items-center gap-3 group">
-                                     <code className="flex-1 font-mono text-sm text-yellow-300 truncate">
-                                        GOLPAC_UPLOAD_TOKEN=dxTLRLGrGg3Jh2ZujTLaavsg
-                                     </code>
-                                     <button 
-                                        onClick={() => copyToClipboard('GOLPAC_UPLOAD_TOKEN=dxTLRLGrGg3Jh2ZujTLaavsg', 'env_var_modal')}
-                                        className="text-slate-400 hover:text-white transition-colors p-1"
-                                        title="Copy Environment Variable"
-                                     >
-                                        {copyFeedback === 'env_var_modal' ? <Check size={16} /> : <Copy size={16} />}
-                                     </button>
-                                </div>
-                            </div>
-
-                            {/* PAYLOAD SPECS */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Multipart Upload Spec</label>
-                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm text-slate-700 space-y-2">
-                                    <div className="flex gap-2">
-                                        <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">file</span>
-                                        <span className="text-slate-500">Binary MP4 data</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">installId</span>
-                                        <span className="text-slate-500">Device ID string</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">timestamp</span>
-                                        <span className="text-slate-500">ISO 8601 Date String</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">filename</span>
-                                        <span className="text-slate-500">Original filename</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                   </div>
-              </div>
-          </div>
-      )}
-
-    </div>
-  );
+    );
 };
