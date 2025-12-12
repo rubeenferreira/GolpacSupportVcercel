@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { Device, DeviceStatus, OSType } from '../types';
 import { APP_LATEST_VERSION } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
-import { Activity, Server, AlertTriangle, ShieldCheck, Terminal, Copy, Check } from 'lucide-react';
+import { Activity, Server, AlertTriangle, ShieldCheck, Terminal, Copy, Check, Info } from 'lucide-react';
 
 interface DashboardProps {
   devices: Device[];
@@ -52,7 +52,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
     setTimeout(() => setCopyFeedback(null), 2000);
   };
 
-  const apiBase = typeof window !== 'undefined' ? window.location.origin : 'https://golpac-support-panel.vercel.app';
+  // Determine API base logic
+  // Since we know the user's Vercel project, we hardcode it for localhost usage.
+  const apiBase = useMemo(() => {
+      if (typeof window === 'undefined') return 'https://golpac-support-vcercel.vercel.app';
+      const origin = window.location.origin;
+      // If localhost, show the real production URL
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+          return 'https://golpac-support-vcercel.vercel.app';
+      }
+      return origin;
+  }, []);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-4">

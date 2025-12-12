@@ -10,7 +10,7 @@ export default async function handler(
   const origin = request.headers.origin;
   const allowedOrigin = origin && (origin.endsWith('.vercel.app') || origin.includes('localhost')) 
     ? origin 
-    : "https://golpac-support-panel.vercel.app"; // Fallback to production domain
+    : "https://golpac-support-vcercel.vercel.app"; // Fallback to production domain
 
   response.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   response.setHeader('Access-Control-Allow-Credentials', 'true');

@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat, VideoRecording } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle, Image as ImageIcon, Video, PlayCircle, Download, Terminal, Copy, Check } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle, Image as ImageIcon, Video, PlayCircle, Download, Terminal, Copy, Check, Info } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -588,9 +588,15 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   };
 
   // Determine API base for display
-  const apiBase = typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
-    ? `https://${window.location.hostname}` 
-    : 'https://golpac-support-panel.vercel.app';
+  // Use the hardcoded user Vercel URL for localhost fallback
+  const apiBase = useMemo(() => {
+    if (typeof window === 'undefined') return 'https://golpac-support-vcercel.vercel.app';
+    const origin = window.location.origin;
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return 'https://golpac-support-vcercel.vercel.app';
+    }
+    return origin;
+  }, []);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full animate-in slide-in-from-bottom-4 duration-500">

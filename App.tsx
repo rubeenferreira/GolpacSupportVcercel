@@ -25,11 +25,11 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Determine API Base URL
-  // Logic: If the hostname ends with 'vercel.app', we are on the deployed infrastructure (preview or prod),
-  // so we use relative paths ('') to hit the functions of THAT specific deployment.
-  // Otherwise (localhost, 127.0.0.1, 192.168.x.x, custom domains), we point to the main production backend.
-  const isVercelDeployment = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app');
-  const API_BASE = isVercelDeployment ? '' : 'https://golpac-support-vcercel.vercel.app';
+  // If we are on Vercel, we use relative paths ('') to hit our own API functions.
+  // If we are local (npm run dev), we point to the production Vercel backend to get real data.
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://golpac-support-vcercel.vercel.app'
+    : '';
 
   // --- Session Management ---
 
@@ -113,11 +113,12 @@ const App: React.FC = () => {
           const data = await response.json();
           setDevices(data);
       } else {
-          console.error(`Failed to fetch devices. URL: ${targetUrl} | Status: ${response.status}`);
-          const contentType = response.headers.get("content-type");
-          if (contentType && contentType.indexOf("application/json") === -1) {
-              const text = await response.text();
-              console.error("Received HTML instead of JSON. This usually means the API route was not found (404) or crashed.", text.substring(0, 100));
+          // If we are local and not running 'vercel dev', /api/devices will 404 (handled by index.html)
+          // We suppress the error in console if it's just local dev environment noise
+          if (response.status === 404 && window.location.hostname === 'localhost') {
+             console.warn("API not found. If running locally, make sure to use 'vercel dev' to enable Serverless Functions.");
+          } else {
+             console.error(`Failed to fetch devices. URL: ${targetUrl} | Status: ${response.status}`);
           }
       }
     } catch (error) {

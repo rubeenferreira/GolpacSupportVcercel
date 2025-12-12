@@ -62,7 +62,7 @@ export default async function handler(
 
     // Normalization
     const appUsageRaw = data.appUsage || data.AppUsage || data.app_usage;
-    const webUsageRaw = data.webUsage || data.WebUsage || data.web_usage;
+    const webUsageRaw = data.webUsage || data.webUsage || data.web_usage;
     const userName = data.userName || data.UserName || data.username || data.user;
     const osVersion = data.osVersion || data.OsVersion || data.OSVersion;
     
@@ -142,11 +142,22 @@ export default async function handler(
         mergedWebUsage = Array.from(webMap.values());
     }
 
+    // VIDEO PROTECTION:
+    // If the agent sends a payload without videos (or empty), do NOT overwrite the existing videos
+    // which may have been populated by the independent /api/upload endpoint.
+    const existingVideos = existingData.videos || [];
+    // Only accept videos from payload if they are non-empty
+    const payloadVideos = data.videos;
+    const hasPayloadVideos = Array.isArray(payloadVideos) && payloadVideos.length > 0;
+    
+    const finalVideos = hasPayloadVideos ? payloadVideos : existingVideos;
+
     const updatedData = {
         ...existingData,
         ...data,
         appUsage: mergedAppUsage,
         webUsage: mergedWebUsage,
+        videos: finalVideos,
         userName: userName || existingData.userName,
         osVersion: osVersion || existingData.osVersion,
         lastScreenshot: lastScreenshot,
