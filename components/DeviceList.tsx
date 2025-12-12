@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat, VideoRecording } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle, Image as ImageIcon, Video, PlayCircle, Download } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle, Image as ImageIcon, Video, PlayCircle, Download, Terminal, Copy, Check } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -563,6 +563,8 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState('');
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [expandedDeviceId, setExpandedDeviceId] = useState<string | null>(null);
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<string|null>(null);
 
   const filteredDevices = devices.filter(d => {
     const matchesSearch = d.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -579,6 +581,17 @@ export const DeviceList: React.FC<DeviceListProps> = ({
       setExpandedDeviceId(prev => prev === id ? null : id);
   };
 
+  const copyToClipboard = (text: string, type: string) => {
+      navigator.clipboard.writeText(text);
+      setCopyFeedback(type);
+      setTimeout(() => setCopyFeedback(null), 2000);
+  };
+
+  // Determine API base for display
+  const apiBase = typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
+    ? `https://${window.location.hostname}` 
+    : 'https://golpac-support-panel.vercel.app';
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full animate-in slide-in-from-bottom-4 duration-500">
       
@@ -589,6 +602,16 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                 <Monitor size={20} className="text-slate-500"/>
                 {isReadOnly ? 'Assigned Devices' : 'All Devices'}
             </h2>
+            
+            {!isReadOnly && (
+                <button 
+                    onClick={() => setShowConnectModal(true)}
+                    className="text-xs font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg border border-brand-100 transition-colors"
+                >
+                    <Terminal size={14} />
+                    Agent Setup Info
+                </button>
+            )}
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">
@@ -699,7 +722,16 @@ export const DeviceList: React.FC<DeviceListProps> = ({
               </div>
           ))}
           {filteredDevices.length === 0 && (
-              <div className="text-center py-10 text-slate-400 text-sm">No devices found.</div>
+              <div className="text-center py-10 flex flex-col items-center justify-center">
+                  <div className="text-slate-400 text-sm mb-4">No devices found.</div>
+                  <button 
+                      onClick={() => setShowConnectModal(true)}
+                      className="bg-brand-600 hover:bg-brand-700 text-white px-5 py-3 rounded-xl shadow-lg shadow-brand-500/30 flex items-center gap-2 font-bold transition-all"
+                  >
+                      <Terminal size={18} />
+                      Get Connection Info
+                  </button>
+              </div>
           )}
       </div>
 
@@ -798,10 +830,23 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                 ))}
                 {filteredDevices.length === 0 && (
                     <tr>
-                        <td colSpan={isReadOnly ? 8 : 9} className="px-6 py-12 text-center text-slate-400">
-                            {devices.length === 0 
-                                ? "No devices found assigned to your company." 
-                                : `No devices found matching your filters.`}
+                        <td colSpan={isReadOnly ? 8 : 9} className="px-6 py-12">
+                             <div className="flex flex-col items-center justify-center">
+                                  <div className="text-slate-400 text-sm mb-4">
+                                      {devices.length === 0 
+                                          ? "No devices found. Connect your first agent to get started." 
+                                          : `No devices found matching your filters.`}
+                                  </div>
+                                  {devices.length === 0 && (
+                                      <button 
+                                          onClick={() => setShowConnectModal(true)}
+                                          className="bg-brand-600 hover:bg-brand-700 text-white px-5 py-3 rounded-xl shadow-lg shadow-brand-500/30 flex items-center gap-2 font-bold transition-all hover:scale-105 active:scale-95"
+                                      >
+                                          <Terminal size={18} />
+                                          Get Connection Info
+                                      </button>
+                                  )}
+                             </div>
                         </td>
                     </tr>
                 )}
@@ -854,6 +899,103 @@ export const DeviceList: React.FC<DeviceListProps> = ({
               </div>
           </div>
       )}
+
+      {/* Connection Info Modal */}
+      {showConnectModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowConnectModal(false)} />
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative z-10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                   <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                       <div className="flex items-center gap-2">
+                           <Terminal size={20} className="text-slate-700" />
+                           <h3 className="font-bold text-slate-800">Backend Connection Details</h3>
+                       </div>
+                       <button onClick={() => setShowConnectModal(false)} className="text-slate-400 hover:text-slate-600">
+                           <X size={20} />
+                       </button>
+                   </div>
+                   <div className="p-6 overflow-y-auto">
+                        <p className="text-sm text-slate-600 mb-6">
+                            Use these parameters to configure your remote agents (Rust/Go) to report data to this panel.
+                        </p>
+
+                        <div className="space-y-6">
+                            {/* URLs */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Endpoints</label>
+                                <div className="bg-slate-900 rounded-lg p-3 relative group">
+                                     <div className="text-xs text-slate-400 mb-1">Upload Video Route</div>
+                                     <div className="font-mono text-sm text-green-400 break-all">{apiBase}/api/upload</div>
+                                     <button 
+                                        onClick={() => copyToClipboard(`${apiBase}/api/upload`, 'url_up')}
+                                        className="absolute right-2 top-2 p-1.5 text-slate-400 hover:text-white rounded bg-white/10 opacity-0 group-hover:opacity-100 transition-all"
+                                     >
+                                        {copyFeedback === 'url_up' ? <Check size={14}/> : <Copy size={14}/>}
+                                     </button>
+                                </div>
+                                <div className="bg-slate-900 rounded-lg p-3 relative group">
+                                     <div className="text-xs text-slate-400 mb-1">Heartbeat / Install Route</div>
+                                     <div className="font-mono text-sm text-blue-400 break-all">{apiBase}/api/install</div>
+                                     <button 
+                                        onClick={() => copyToClipboard(`${apiBase}/api/install`, 'url_in')}
+                                        className="absolute right-2 top-2 p-1.5 text-slate-400 hover:text-white rounded bg-white/10 opacity-0 group-hover:opacity-100 transition-all"
+                                     >
+                                        {copyFeedback === 'url_in' ? <Check size={14}/> : <Copy size={14}/>}
+                                     </button>
+                                </div>
+                            </div>
+
+                            {/* AUTH */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Authentication</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                        <div className="text-xs text-slate-500 mb-1">Header Name</div>
+                                        <div className="font-mono text-sm font-bold text-slate-800">x-install-token</div>
+                                    </div>
+                                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg flex justify-between items-center group">
+                                        <div>
+                                            <div className="text-xs text-slate-500 mb-1">Token Value (Default)</div>
+                                            <div className="font-mono text-sm font-bold text-slate-800">dxTLRLGrGg3Jh2ZujTLaavsg</div>
+                                        </div>
+                                        <button 
+                                            onClick={() => copyToClipboard('dxTLRLGrGg3Jh2ZujTLaavsg', 'token')}
+                                            className="text-slate-400 hover:text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            {copyFeedback === 'token' ? <Check size={14}/> : <Copy size={14}/>}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* PAYLOAD SPECS */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Multipart Upload Spec</label>
+                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm text-slate-700 space-y-2">
+                                    <div className="flex gap-2">
+                                        <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">file</span>
+                                        <span className="text-slate-500">Binary MP4 data</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">installId</span>
+                                        <span className="text-slate-500">Device ID string</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">timestamp</span>
+                                        <span className="text-slate-500">ISO 8601 Date String</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">filename</span>
+                                        <span className="text-slate-500">Original filename</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                   </div>
+              </div>
+          </div>
+      )}
+
     </div>
   );
 };

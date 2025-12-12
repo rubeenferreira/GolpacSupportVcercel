@@ -1,16 +1,17 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Device, DeviceStatus, OSType } from '../types';
 import { APP_LATEST_VERSION } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
-import { Activity, Server, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Activity, Server, AlertTriangle, ShieldCheck, Terminal, Copy, Check } from 'lucide-react';
 
 interface DashboardProps {
   devices: Device[];
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
-  
+  const [copyFeedback, setCopyFeedback] = useState<string|null>(null);
+
   const stats = useMemo(() => {
     return {
       total: devices.length,
@@ -45,9 +46,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
     [DeviceStatus.CRITICAL]: '#ef4444',
   };
 
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopyFeedback(id);
+    setTimeout(() => setCopyFeedback(null), 2000);
+  };
+
+  const apiBase = typeof window !== 'undefined' ? window.location.origin : 'https://golpac-support-panel.vercel.app';
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-4">
-      {/* KPI Grid: Changed to grid-cols-2 for mobile to see more data at once */}
+      {/* KPI Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {/* KPI Cards */}
         <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
@@ -137,6 +146,51 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
+
+      {/* Agent Configuration Card */}
+      <div className="bg-slate-900 rounded-xl p-6 shadow-sm border border-slate-800 text-white">
+        <div className="flex items-center gap-2 mb-6">
+            <Terminal className="text-green-400" />
+            <h3 className="text-lg font-semibold">Agent Connection Details</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Upload API Endpoint</label>
+                <div className="flex items-center gap-2 bg-slate-800 p-3 rounded-lg border border-slate-700 group">
+                    <code className="flex-1 font-mono text-sm text-green-300 truncate">
+                        {apiBase}/api/upload
+                    </code>
+                    <button 
+                        onClick={() => copyToClipboard(`${apiBase}/api/upload`, 'url')}
+                        className="text-slate-400 hover:text-white transition-colors p-1"
+                        title="Copy URL"
+                    >
+                        {copyFeedback === 'url' ? <Check size={16} /> : <Copy size={16} />}
+                    </button>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Authentication Token (x-install-token)</label>
+                <div className="flex items-center gap-2 bg-slate-800 p-3 rounded-lg border border-slate-700 group">
+                    <code className="flex-1 font-mono text-sm text-blue-300 truncate">
+                        dxTLRLGrGg3Jh2ZujTLaavsg
+                    </code>
+                    <button 
+                        onClick={() => copyToClipboard('dxTLRLGrGg3Jh2ZujTLaavsg', 'token')}
+                        className="text-slate-400 hover:text-white transition-colors p-1"
+                        title="Copy Token"
+                    >
+                        {copyFeedback === 'token' ? <Check size={16} /> : <Copy size={16} />}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <p className="text-xs text-slate-500 mt-4">
+            Configure your remote agent to POST multipart/form-data to this URL with the header <code>x-install-token</code>.
+        </p>
       </div>
     </div>
   );
