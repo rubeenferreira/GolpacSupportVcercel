@@ -213,9 +213,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
                 </h4>
                 <div className="space-y-2">
                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Blob Base URL (Env Var)</label>
-                     <div className="bg-black/40 p-2.5 rounded-lg border border-slate-700 text-xs text-slate-400">
-                        Find in Vercel: <span className="text-white font-mono">Storage &rarr; Blob &rarr; Usage</span>
-                        <div className="mt-1 text-[10px] italic">e.g. https://...public.blob.vercel-storage.com</div>
+                     <div className="bg-black/40 p-2.5 rounded-lg border border-slate-700 text-xs text-slate-400 space-y-2">
+                        <div>
+                            Find in Vercel: <span className="text-white font-mono">Storage &rarr; Blob &rarr; Usage</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-slate-800/50 p-2 rounded border border-slate-700/50 group">
+                             <code className="flex-1 font-mono text-[10px] text-purple-300 truncate">
+                                https://2wqrbhrbmuzralsz.public.blob.vercel-storage.com
+                             </code>
+                             <button 
+                                onClick={() => copyToClipboard('https://2wqrbhrbmuzralsz.public.blob.vercel-storage.com', 'bloburl')}
+                                className="text-slate-500 hover:text-white transition-colors"
+                                title="Copy Base URL"
+                            >
+                                {copyFeedback === 'bloburl' ? <Check size={12} /> : <Copy size={12} />}
+                            </button>
+                        </div>
                      </div>
                 </div>
 
