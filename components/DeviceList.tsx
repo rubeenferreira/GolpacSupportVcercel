@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat, VideoRecording } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle, Image as ImageIcon, Video, PlayCircle, Download, Terminal, Copy, Check, Info } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle, Image as ImageIcon, Video, PlayCircle, Download, Terminal, Copy, Check, Info, ExternalLink } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -128,6 +128,43 @@ const getPrimaryDomain = (domain: string) => {
 const GENERIC_COLORS = [
     '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#6366f1'
 ];
+
+const VideoPlayer: React.FC<{ url: string; filename: string }> = ({ url, filename }) => {
+    const [error, setError] = useState(false);
+
+    if (error) {
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-4 text-center">
+                <AlertTriangle size={24} className="mb-2 text-yellow-500" />
+                <p className="text-xs font-medium text-white mb-1">Playback Failed</p>
+                <p className="text-[10px] mb-3">Browser couldn't decode this file.</p>
+                <a 
+                    href={url} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors"
+                >
+                    <ExternalLink size={12} />
+                    Open Directly
+                </a>
+            </div>
+        );
+    }
+
+    return (
+        <video 
+            src={url} 
+            controls 
+            playsInline
+            crossOrigin="anonymous"
+            className="w-full h-full object-contain bg-black"
+            preload="metadata"
+            onError={() => setError(true)}
+        >
+            Your browser does not support the video tag.
+        </video>
+    );
+};
 
 const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<void> }> = ({ device, onRefresh }) => {
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -400,25 +437,34 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     {videos.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {videos.map((vid, idx) => (
-                                <div key={idx} className="border border-slate-200 rounded-lg p-3 hover:border-indigo-200 transition-all group">
-                                    <div className="aspect-video bg-black rounded-lg mb-2 relative overflow-hidden flex items-center justify-center">
-                                        <video 
-                                            src={vid.url} 
-                                            controls 
-                                            className="w-full h-full object-contain"
-                                            preload="metadata"
-                                        >
-                                            Your browser does not support the video tag.
-                                        </video>
+                                <div key={idx} className="border border-slate-200 rounded-lg p-3 hover:border-indigo-200 transition-all group bg-slate-50/50">
+                                    <div className="aspect-video bg-black rounded-lg mb-2 relative overflow-hidden flex items-center justify-center border border-slate-200">
+                                        <VideoPlayer url={vid.url} filename={vid.filename} />
                                     </div>
                                     <div className="flex justify-between items-start">
                                         <div className="overflow-hidden">
                                             <p className="text-xs font-medium text-slate-700 truncate" title={vid.filename}>{vid.filename}</p>
                                             <p className="text-[10px] text-slate-400">{new Date(vid.timestamp).toLocaleString()}</p>
                                         </div>
-                                        <a href={vid.url} download className="text-slate-400 hover:text-indigo-600">
-                                            <Download size={14} />
-                                        </a>
+                                        <div className="flex items-center gap-1">
+                                            <a 
+                                                href={vid.url} 
+                                                target="_blank" 
+                                                rel="noreferrer" 
+                                                className="text-slate-400 hover:text-indigo-600 p-1"
+                                                title="Open in new tab"
+                                            >
+                                                <ExternalLink size={14} />
+                                            </a>
+                                            <a 
+                                                href={vid.url} 
+                                                download 
+                                                className="text-slate-400 hover:text-indigo-600 p-1"
+                                                title="Download"
+                                            >
+                                                <Download size={14} />
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             ))}

@@ -15,8 +15,6 @@ export default async function handler(
   response: VercelResponse
 ) {
   // CORS Configuration
-  // If an origin is present, reflect it. Otherwise, assume server-to-server and allow *.
-  // Crucially, if we allow *, we MUST NOT set Credentials to true.
   const reqOrigin = request.headers.origin;
   
   if (reqOrigin) {
@@ -24,7 +22,6 @@ export default async function handler(
       response.setHeader('Access-Control-Allow-Credentials', 'true');
   } else {
       response.setHeader('Access-Control-Allow-Origin', '*');
-      // Do NOT set Access-Control-Allow-Credentials for wildcard origin
   }
   
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -41,7 +38,6 @@ export default async function handler(
   const validToken = process.env.INSTALL_TOKEN || 'dxTLRLGrGg3Jh2ZujTLaavsg';
   if (token !== validToken) {
       console.error("Upload attempt with invalid token:", token);
-      // Explicitly return 401, not 403, to differentiate from firewall blocks
       return response.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -83,16 +79,21 @@ export default async function handler(
   busboy.on('file', (name, file, info) => {
     fileProcessed = true;
     const { filename, mimeType } = info;
-    console.log(`[Upload] Stream received for file: ${filename}, type: ${mimeType}`);
     
-    // Upload to Vercel Blob
+    // Force MP4 if detected type is generic or missing, otherwise trust the client
+    // This fixes issues where agents upload 'application/octet-stream' which browsers refuse to play.
+    const finalContentType = (!mimeType || mimeType === 'application/octet-stream') 
+        ? 'video/mp4' 
+        : mimeType;
+
+    console.log(`[Upload] Stream received for file: ${filename}, detected: ${mimeType}, saving as: ${finalContentType}`);
+    
     const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${filename}`;
     
-    // Pass the contentType so browsers know how to handle it (playback vs download)
     fileUploadPromise = put(`recordings/${uniqueName}`, file, {
       access: 'public',
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      contentType: mimeType || 'video/mp4', // Default to mp4 if undefined
+      contentType: finalContentType, 
     }).then((blob) => {
       videoUrl = blob.url;
       console.log(`[Upload] Blob success: ${videoUrl}`);
@@ -125,7 +126,6 @@ export default async function handler(
 
       console.log(`[Upload] Linking video to device ${deviceId}`);
 
-      // Update Device Record in KV
       const deviceKey = `device:${deviceId}`;
       
       await kv.sadd('device_ids', deviceId);
