@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { Device, DeviceStatus, OSType } from '../types';
 import { APP_LATEST_VERSION } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
-import { Activity, Server, AlertTriangle, ShieldCheck, Terminal, Copy, Check, Info } from 'lucide-react';
+import { Activity, Server, AlertTriangle, ShieldCheck, Terminal, Copy, Check, Info, Database } from 'lucide-react';
 
 interface DashboardProps {
   devices: Device[];
@@ -159,63 +159,90 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
       </div>
 
       {/* Agent Configuration Card */}
-      <div className="bg-slate-900 rounded-xl p-6 shadow-sm border border-slate-800 text-white">
-        <div className="flex items-center gap-2 mb-6">
+      <div className="bg-slate-900 rounded-xl p-6 shadow-sm border border-slate-800 text-white animate-in slide-in-from-bottom-2">
+        <div className="flex items-center gap-2 mb-6 border-b border-slate-800 pb-4">
             <Terminal className="text-green-400" />
-            <h3 className="text-lg font-semibold">Agent Connection Details</h3>
+            <h3 className="text-lg font-semibold">Agent Backend Configuration</h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Upload API Endpoint</label>
-                <div className="flex items-center gap-2 bg-slate-800 p-3 rounded-lg border border-slate-700 group">
-                    <code className="flex-1 font-mono text-sm text-green-300 truncate">
-                        {apiBase}/api/upload
-                    </code>
-                    <button 
-                        onClick={() => copyToClipboard(`${apiBase}/api/upload`, 'url')}
-                        className="text-slate-400 hover:text-white transition-colors p-1"
-                        title="Copy URL"
-                    >
-                        {copyFeedback === 'url' ? <Check size={16} /> : <Copy size={16} />}
-                    </button>
+            {/* Heartbeat & Install */}
+            <div className="space-y-4">
+                <h4 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                    <Activity size={16} className="text-blue-400" />
+                    Heartbeat / Install
+                </h4>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">API Endpoint</label>
+                    <div className="flex items-center gap-2 bg-slate-800 p-2.5 rounded-lg border border-slate-700 group">
+                        <code className="flex-1 font-mono text-xs text-blue-300 truncate">
+                            {apiBase}/api/install
+                        </code>
+                        <button 
+                            onClick={() => copyToClipboard(`${apiBase}/api/install`, 'url')}
+                            className="text-slate-400 hover:text-white transition-colors p-1"
+                            title="Copy URL"
+                        >
+                            {copyFeedback === 'url' ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Install Token (x-install-token)</label>
+                    <div className="flex items-center gap-2 bg-slate-800 p-2.5 rounded-lg border border-slate-700 group">
+                        <code className="flex-1 font-mono text-xs text-yellow-300 truncate">
+                            dxTLRLGrGg3Jh2ZujTLaavsg
+                        </code>
+                        <button 
+                            onClick={() => copyToClipboard('dxTLRLGrGg3Jh2ZujTLaavsg', 'token')}
+                            className="text-slate-400 hover:text-white transition-colors p-1"
+                            title="Copy Token"
+                        >
+                            {copyFeedback === 'token' ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Authentication Token (x-install-token)</label>
-                <div className="flex items-center gap-2 bg-slate-800 p-3 rounded-lg border border-slate-700 group">
-                    <code className="flex-1 font-mono text-sm text-blue-300 truncate">
-                        dxTLRLGrGg3Jh2ZujTLaavsg
-                    </code>
-                    <button 
-                        onClick={() => copyToClipboard('dxTLRLGrGg3Jh2ZujTLaavsg', 'token')}
-                        className="text-slate-400 hover:text-white transition-colors p-1"
-                        title="Copy Token"
-                    >
-                        {copyFeedback === 'token' ? <Check size={16} /> : <Copy size={16} />}
-                    </button>
+            {/* Direct Blob Upload */}
+            <div className="space-y-4">
+                 <h4 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                    <Database size={16} className="text-purple-400" />
+                    Direct Blob Upload (Video)
+                </h4>
+                <div className="space-y-2">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Blob Base URL (Env Var)</label>
+                     <div className="bg-black/40 p-2.5 rounded-lg border border-slate-700 text-xs text-slate-400">
+                        Find in Vercel: <span className="text-white font-mono">Storage &rarr; Blob &rarr; Usage</span>
+                        <div className="mt-1 text-[10px] italic">e.g. https://...public.blob.vercel-storage.com</div>
+                     </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Read/Write Token (GOLPAC_BLOB_TOKEN)</label>
+                    <div className="bg-black/40 p-2.5 rounded-lg border border-slate-700 flex flex-col gap-2">
+                         <div className="text-xs text-slate-400">
+                            Find in Vercel: <span className="text-white font-medium">Storage &rarr; Blob &rarr; Settings &rarr; Tokens</span>
+                         </div>
+                         <div className="flex items-center gap-1.5 text-[10px] text-yellow-500/80 bg-yellow-950/30 p-1.5 rounded border border-yellow-900/50">
+                            <Info size={12} />
+                            <span>Copy the R/W token (starts with vercel_blob_rw_)</span>
+                         </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div className="mt-6 pt-6 border-t border-slate-800">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Agent Environment Variable</label>
-            <div className="bg-black/50 p-3 rounded-lg border border-slate-700 flex items-center gap-3 group">
-                 <code className="flex-1 font-mono text-sm text-yellow-300 truncate">
-                    GOLPAC_UPLOAD_TOKEN=dxTLRLGrGg3Jh2ZujTLaavsg
-                 </code>
-                 <button 
-                    onClick={() => copyToClipboard('GOLPAC_UPLOAD_TOKEN=dxTLRLGrGg3Jh2ZujTLaavsg', 'env_var')}
-                    className="text-slate-400 hover:text-white transition-colors p-1"
-                    title="Copy Environment Variable"
-                 >
-                    {copyFeedback === 'env_var' ? <Check size={16} /> : <Copy size={16} />}
-                 </button>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+                <p>Configure your agent with these values to enable heartbeat and video recording features.</p>
+                <div className="flex gap-2">
+                     <span className="px-2 py-1 bg-slate-800 rounded border border-slate-700">GOLPAC_UPLOAD_TOKEN</span>
+                     <span className="px-2 py-1 bg-slate-800 rounded border border-slate-700">GOLPAC_BLOB_TOKEN</span>
+                     <span className="px-2 py-1 bg-slate-800 rounded border border-slate-700">GOLPAC_BLOB_BASE_URL</span>
+                </div>
             </div>
-            <p className="text-[10px] text-slate-500 mt-2">
-                Set this environment variable in your agent's runtime configuration to authenticate uploads.
-            </p>
         </div>
       </div>
     </div>
