@@ -401,11 +401,15 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {videos.map((vid, idx) => (
                                 <div key={idx} className="border border-slate-200 rounded-lg p-3 hover:border-indigo-200 transition-all group">
-                                    <div className="aspect-video bg-slate-100 rounded mb-2 flex items-center justify-center relative overflow-hidden">
-                                        <Video size={32} className="text-slate-300" />
-                                        <a href={vid.url} target="_blank" rel="noreferrer" className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors">
-                                             <PlayCircle size={40} className="text-white opacity-0 group-hover:opacity-100 drop-shadow-md scale-75 group-hover:scale-100 transition-all" />
-                                        </a>
+                                    <div className="aspect-video bg-black rounded-lg mb-2 relative overflow-hidden flex items-center justify-center">
+                                        <video 
+                                            src={vid.url} 
+                                            controls 
+                                            className="w-full h-full object-contain"
+                                            preload="metadata"
+                                        >
+                                            Your browser does not support the video tag.
+                                        </video>
                                     </div>
                                     <div className="flex justify-between items-start">
                                         <div className="overflow-hidden">

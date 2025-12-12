@@ -82,15 +82,17 @@ export default async function handler(
 
   busboy.on('file', (name, file, info) => {
     fileProcessed = true;
-    const { filename } = info;
-    console.log(`[Upload] Stream received for file: ${filename}`);
+    const { filename, mimeType } = info;
+    console.log(`[Upload] Stream received for file: ${filename}, type: ${mimeType}`);
     
     // Upload to Vercel Blob
     const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${filename}`;
     
+    // Pass the contentType so browsers know how to handle it (playback vs download)
     fileUploadPromise = put(`recordings/${uniqueName}`, file, {
       access: 'public',
-      token: process.env.BLOB_READ_WRITE_TOKEN, 
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: mimeType || 'video/mp4', // Default to mp4 if undefined
     }).then((blob) => {
       videoUrl = blob.url;
       console.log(`[Upload] Blob success: ${videoUrl}`);
