@@ -1,6 +1,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@vercel/kv';
+import { list } from '@vercel/blob';
 
 export default async function handler(
   request: VercelRequest,
@@ -104,12 +105,28 @@ export default async function handler(
         return response.status(200).json([]);
     }
 
-    // 2. Fetch all device details in parallel
+    // 2. Fetch all device details from KV
     const pipeline = kv.pipeline();
     ids.forEach(id => pipeline.get(`device:${id}`));
     const results = await pipeline.exec();
 
-    // 3. Map to UI format
+    // 3. Fetch blobs from Vercel Blob Storage to find direct uploads
+    // We look for files in the 'recordings/' prefix
+    let blobVideos: any[] = [];
+    try {
+        if (process.env.BLOB_READ_WRITE_TOKEN) {
+            const { blobs } = await list({ 
+                prefix: 'recordings/', 
+                limit: 1000, 
+                token: process.env.BLOB_READ_WRITE_TOKEN 
+            });
+            blobVideos = blobs;
+        }
+    } catch (e) {
+        console.error("Failed to list blobs:", e);
+    }
+
+    // 4. Map to UI format and merge videos
     const devices = results.map((data: any) => {
         if (!data) return null;
         
@@ -126,9 +143,48 @@ export default async function handler(
         // If seen within last 5 minutes, consider Online
         if (diffMinutes < 5) status = 'Online'; 
         
+        const hostname = data.hostname || 'Unknown';
+        const hostnameLower = hostname.toLowerCase();
+
+        // Find blobs that belong to this device based on folder structure: recordings/<hostname>/...
+        const directUploads = blobVideos
+            .filter(blob => {
+                const parts = blob.pathname.split('/');
+                // Check if the folder name matches the hostname (case-insensitive)
+                return parts.length >= 3 && parts[1].toLowerCase() === hostnameLower;
+            })
+            .map(blob => {
+                const filename = blob.pathname.split('/').pop() || '';
+                // Try to parse timestamp from filename: YYYYMMDDTHHMMSS_video.mp4
+                let timestamp = blob.uploadedAt.toISOString();
+                const match = filename.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
+                
+                if (match) {
+                    // Reconstruct ISO string from compact format
+                    timestamp = `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}Z`;
+                }
+
+                return {
+                    url: blob.url,
+                    timestamp: timestamp,
+                    filename: filename,
+                    size: blob.size
+                };
+            });
+
+        // Merge KV videos with Direct Uploads (deduplicate by URL)
+        const kvVideos = data.videos || [];
+        const existingUrls = new Set(kvVideos.map((v: any) => v.url));
+        const newUniqueVideos = directUploads.filter((v: any) => !existingUrls.has(v.url));
+        
+        // Combine and sort by newest first
+        const allVideos = [...newUniqueVideos, ...kvVideos].sort((a: any, b: any) => 
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+
         return {
             id: data.installId,
-            hostname: data.hostname,
+            hostname: hostname,
             os: osType,
             osVersion: data.osVersion || 'N/A',
             appVersion: data.appVersion || '1.0.0',
@@ -140,7 +196,7 @@ export default async function handler(
             company: data.company || '', // Return the stored company
             appUsage: data.appUsage || [], // Pass through usage data
             webUsage: data.webUsage || [],  // Pass through usage data
-            videos: data.videos || [], // Return uploaded videos
+            videos: allVideos.slice(0, 50), // Return combined videos, limit to 50
             lastScreenshot: data.lastScreenshot,
             lastScreenshotTime: data.lastScreenshotTime
         };
