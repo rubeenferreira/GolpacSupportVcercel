@@ -188,9 +188,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
                 </div>
             </div>
         </div>
-        <p className="text-xs text-slate-500 mt-4">
-            Configure your remote agent to POST multipart/form-data to this URL with the header <code>x-install-token</code>.
-        </p>
+
+        <div className="mt-6 pt-6 border-t border-slate-800">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Agent Environment Variable</label>
+            <div className="bg-black/50 p-3 rounded-lg border border-slate-700 flex items-center gap-3 group">
+                 <code className="flex-1 font-mono text-sm text-yellow-300 truncate">
+                    GOLPAC_UPLOAD_TOKEN=dxTLRLGrGg3Jh2ZujTLaavsg
+                 </code>
+                 <button 
+                    onClick={() => copyToClipboard('GOLPAC_UPLOAD_TOKEN=dxTLRLGrGg3Jh2ZujTLaavsg', 'env_var')}
+                    className="text-slate-400 hover:text-white transition-colors p-1"
+                    title="Copy Environment Variable"
+                 >
+                    {copyFeedback === 'env_var' ? <Check size={16} /> : <Copy size={16} />}
+                 </button>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-2">
+                Set this environment variable in your agent's runtime configuration to authenticate uploads.
+            </p>
+        </div>
       </div>
     </div>
   );

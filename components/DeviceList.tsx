@@ -968,6 +968,23 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                                 </div>
                             </div>
 
+                             {/* ENV VAR - ADDED FOR CONSISTENCY */}
+                             <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Environment Variable</label>
+                                <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 flex items-center gap-3 group">
+                                     <code className="flex-1 font-mono text-sm text-yellow-300 truncate">
+                                        GOLPAC_UPLOAD_TOKEN=dxTLRLGrGg3Jh2ZujTLaavsg
+                                     </code>
+                                     <button 
+                                        onClick={() => copyToClipboard('GOLPAC_UPLOAD_TOKEN=dxTLRLGrGg3Jh2ZujTLaavsg', 'env_var_modal')}
+                                        className="text-slate-400 hover:text-white transition-colors p-1"
+                                        title="Copy Environment Variable"
+                                     >
+                                        {copyFeedback === 'env_var_modal' ? <Check size={16} /> : <Copy size={16} />}
+                                     </button>
+                                </div>
+                            </div>
+
                             {/* PAYLOAD SPECS */}
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Multipart Upload Spec</label>
