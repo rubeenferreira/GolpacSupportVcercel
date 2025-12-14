@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Device, AppUsageStat, WebUsageStat, VideoRecording } from '../types';
 import { Badge } from './ui/Badge';
-import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle, Image as ImageIcon, Video, PlayCircle, Download, Terminal, Copy, Check, Info, ExternalLink } from 'lucide-react';
+import { Search, Monitor, Calendar, Hash, Trash2, Building2, Edit2, X, ChevronDown, ChevronUp, Clock, Globe, PieChart as PieChartIcon, LayoutGrid, Filter, RefreshCw, User as UserIcon, Bug, Code, Eye, EyeOff, Layers, MousePointerClick, RotateCcw, AlertTriangle, Image as ImageIcon, Video, PlayCircle, Download, Terminal, Copy, Check, Info, ExternalLink, Play } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface DeviceListProps {
@@ -129,48 +129,13 @@ const GENERIC_COLORS = [
     '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#6366f1'
 ];
 
-const VideoPlayer: React.FC<{ url: string; filename: string }> = ({ url, filename }) => {
-    const [error, setError] = useState(false);
-
-    if (error) {
-        return (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-4 text-center">
-                <AlertTriangle size={24} className="mb-2 text-yellow-500" />
-                <p className="text-xs font-medium text-white mb-1">Playback Failed</p>
-                <p className="text-[10px] mb-3">Codec or browser error.</p>
-                <a 
-                    href={url} 
-                    download
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors"
-                >
-                    <Download size={12} />
-                    Download File
-                </a>
-            </div>
-        );
-    }
-
-    return (
-        <video 
-            src={url} 
-            controls 
-            playsInline
-            crossOrigin="anonymous"
-            className="w-full h-full object-contain bg-black"
-            preload="metadata"
-            onError={() => setError(true)}
-        >
-            Your browser does not support the video tag.
-        </video>
-    );
-};
-
 const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<void> }> = ({ device, onRefresh }) => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showDebug, setShowDebug] = useState(false);
     const [showSystemApps, setShowSystemApps] = useState(false);
     const [showScreenshot, setShowScreenshot] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'videos'>('overview');
+    const [playingVideo, setPlayingVideo] = useState<VideoRecording | null>(null);
     
     const hasRealData = (device.appUsage && device.appUsage.length > 0) || (device.webUsage && device.webUsage.length > 0);
     const isOnline = device.status === 'Online';
@@ -399,6 +364,70 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     </div>
                 </div>
             )}
+            
+            {/* Video Player Modal */}
+            {playingVideo && (
+                <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex items-center justify-center p-0 md:p-6" onClick={() => setPlayingVideo(null)}>
+                    <div 
+                        className="w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl bg-black md:rounded-2xl overflow-hidden shadow-2xl flex flex-col relative" 
+                        onClick={e => e.stopPropagation()}
+                    >
+                         {/* Header (Mobile) / Close Button */}
+                         <div className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+                             <div className="text-white pointer-events-auto md:hidden">
+                                 <h3 className="text-sm font-semibold truncate max-w-[200px]">{playingVideo.filename}</h3>
+                             </div>
+                             <button 
+                                onClick={() => setPlayingVideo(null)} 
+                                className="text-white/80 hover:text-white bg-black/40 hover:bg-black/60 p-2 rounded-full backdrop-blur-md pointer-events-auto transition-all"
+                             >
+                                 <X size={24} />
+                             </button>
+                         </div>
+                         
+                         {/* Player Container */}
+                         <div className="flex-1 flex items-center justify-center bg-black relative">
+                            <video 
+                                src={playingVideo.url} 
+                                className="w-full h-full object-contain" 
+                                controls 
+                                autoPlay 
+                                playsInline
+                            />
+                         </div>
+                         
+                         {/* Footer */}
+                         <div className="bg-slate-900 border-t border-slate-800 p-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-white shrink-0">
+                             <div className="text-center sm:text-left overflow-hidden">
+                                 <p className="font-medium text-sm truncate max-w-md">{playingVideo.filename}</p>
+                                 <p className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-2">
+                                     <Calendar size={12} />
+                                     {new Date(playingVideo.timestamp).toLocaleString()}
+                                 </p>
+                             </div>
+                             <div className="flex items-center gap-3">
+                                 <a 
+                                    href={playingVideo.url} 
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors flex items-center gap-2"
+                                 >
+                                     <ExternalLink size={14} />
+                                     New Tab
+                                 </a>
+                                 <a 
+                                    href={playingVideo.url} 
+                                    download 
+                                    className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white transition-colors flex items-center gap-2"
+                                 >
+                                     <Download size={14} />
+                                     Download
+                                 </a>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            )}
 
             {(showDebug || missingPayload) && (
                 <div className="mb-6 bg-slate-900 rounded-xl p-4 text-slate-300 border border-slate-700 shadow-inner overflow-hidden animate-in fade-in slide-in-from-top-2">
@@ -434,35 +463,61 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                         Uploaded Recordings
                     </h4>
                     {videos.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {videos.map((vid, idx) => (
-                                <div key={idx} className="border border-slate-200 rounded-lg p-3 hover:border-indigo-200 transition-all group bg-slate-50/50">
-                                    <div className="aspect-video bg-black rounded-lg mb-2 relative overflow-hidden flex items-center justify-center border border-slate-200">
-                                        <VideoPlayer url={vid.url} filename={vid.filename} />
-                                    </div>
-                                    <div className="flex justify-between items-start">
-                                        <div className="overflow-hidden">
-                                            <p className="text-xs font-medium text-slate-700 truncate" title={vid.filename}>{vid.filename}</p>
-                                            <p className="text-[10px] text-slate-400">{new Date(vid.timestamp).toLocaleString()}</p>
+                                <div key={idx} className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all group shadow-sm flex flex-col">
+                                    {/* Thumbnail / Player Preview */}
+                                    <div 
+                                        className="aspect-video bg-black relative cursor-pointer group-hover:opacity-95 transition-opacity overflow-hidden"
+                                        onClick={() => setPlayingVideo(vid)}
+                                    >
+                                        <video 
+                                            src={vid.url} 
+                                            className="w-full h-full object-contain bg-slate-900"
+                                            preload="metadata"
+                                            playsInline
+                                            muted // Essential for autoplay policies if we wanted to hover-play, but also good for performance
+                                        />
+                                        {/* Play Overlay */}
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/30 transition-colors">
+                                            <div className="bg-white/90 text-indigo-600 rounded-full p-3 shadow-xl transform scale-90 group-hover:scale-110 transition-all duration-300">
+                                                 <Play size={24} fill="currentColor" className="ml-0.5" /> 
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <a 
-                                                href={vid.url} 
-                                                target="_blank" 
-                                                rel="noreferrer" 
-                                                className="text-slate-400 hover:text-indigo-600 p-1"
-                                                title="Open in new tab"
-                                            >
-                                                <ExternalLink size={14} />
-                                            </a>
-                                            <a 
+                                        {/* Timestamp Badge */}
+                                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm font-mono">
+                                            MP4
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Info Area */}
+                                    <div className="p-3 flex flex-col flex-1 justify-between bg-slate-50/30">
+                                        <div className="flex justify-between items-start gap-3 mb-2">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-slate-700 truncate mb-1" title={vid.filename}>{vid.filename}</p>
+                                                <p className="text-[10px] text-slate-500 flex items-center gap-1">
+                                                    <Clock size={10} />
+                                                    {new Date(vid.timestamp).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 mt-1">
+                                             <button 
+                                                onClick={() => setPlayingVideo(vid)}
+                                                className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-indigo-200 text-slate-600 text-xs py-1.5 rounded-lg transition-colors font-medium"
+                                             >
+                                                <PlayCircle size={14} className="text-indigo-500"/>
+                                                Play
+                                             </button>
+                                             <a 
                                                 href={vid.url} 
                                                 download 
-                                                className="text-slate-400 hover:text-indigo-600 p-1"
+                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                                 title="Download"
-                                            >
-                                                <Download size={14} />
-                                            </a>
+                                             >
+                                                 <Download size={16} />
+                                             </a>
                                         </div>
                                     </div>
                                 </div>
@@ -624,9 +679,9 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 pb-20 md:pb-0">
             {/* Search Bar */}
-            <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm sticky top-0 z-10 md:static">
                  <Search className="text-slate-400" size={20} />
                  <input 
                     type="text"
