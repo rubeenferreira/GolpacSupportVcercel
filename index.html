@@ -1,17 +1,37 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="https://static.wixstatic.com/media/297e13_91fceac09fe745458d11b50051949432~mv2.png/v1/fill/w_194,h_110,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/logo_footer.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>Golpac Support IT - Panel</title>
-    <!-- Tailwind is loaded via CDN for simplicity, but in a real build you might import it in CSS -->
+    <!-- Tailwind is loaded via CDN for simplicity -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
             colors: {
+              // Remapping Slate to Notion-like Neutrals
+              slate: {
+                50: '#F7F7F5',  /* Sidebar / Background */
+                100: '#F0F0EF', /* Hover states */
+                200: '#E9E9E7', /* Borders */
+                300: '#E0E0DE',
+                400: '#ACABA9',
+                500: '#787774', /* Secondary Text */
+                600: '#5A5A55',
+                700: '#454540',
+                800: '#37352F', /* Primary Text */
+                900: '#191711',
+              },
               brand: {
                 50: '#f0f9ff',
                 100: '#e0f2fe',
@@ -27,22 +47,24 @@
     </script>
     <style>
       body {
-        background-color: #f8fafc;
+        background-color: #FFFFFF;
+        color: #37352F;
+        -webkit-font-smoothing: antialiased;
       }
-      /* Custom Scrollbar for nicer UI */
+      /* Custom Scrollbar to match Notion's minimal look */
       ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
       }
       ::-webkit-scrollbar-track {
-        background: #f1f5f9; 
+        background: transparent; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1; 
-        border-radius: 4px;
+        background: #D3D1CB; 
+        border-radius: 5px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8; 
+        background: #AEACA6; 
       }
     </style>
 <script type="importmap">

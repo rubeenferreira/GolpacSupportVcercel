@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Device, DeviceStatus } from '../types';
 import { APP_LATEST_VERSION } from '../constants';
@@ -44,56 +45,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-4">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-4">
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {/* KPI Cards */}
-        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-          <div>
-            <p className="text-xs md:text-sm font-medium text-slate-500">Total Installs</p>
-            <p className="text-xl md:text-2xl font-bold text-slate-900">{stats.total}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* KPI Cards - Flat Style */}
+        <div className="bg-white p-4 rounded-md border border-slate-200 flex flex-col gap-3 hover:bg-slate-50 transition-colors">
+          <div className="flex items-center gap-2 text-slate-500">
+             <Server size={16} />
+             <span className="text-sm font-medium">Total Installs</span>
           </div>
-          <div className="p-2 md:p-3 bg-blue-50 rounded-lg text-blue-600 self-end md:self-auto">
-            <Server size={20} className="md:w-6 md:h-6" />
-          </div>
+          <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
         </div>
 
-        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-          <div>
-            <p className="text-xs md:text-sm font-medium text-slate-500">Active Online</p>
-            <p className="text-xl md:text-2xl font-bold text-green-600">{stats.online}</p>
+        <div className="bg-white p-4 rounded-md border border-slate-200 flex flex-col gap-3 hover:bg-slate-50 transition-colors">
+          <div className="flex items-center gap-2 text-green-600">
+             <Activity size={16} />
+             <span className="text-sm font-medium">Active Online</span>
           </div>
-          <div className="p-2 md:p-3 bg-green-50 rounded-lg text-green-600 self-end md:self-auto">
-            <Activity size={20} className="md:w-6 md:h-6" />
-          </div>
+          <p className="text-3xl font-bold text-slate-800">{stats.online}</p>
         </div>
 
-        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-          <div>
-            <p className="text-xs md:text-sm font-medium text-slate-500">Critical Issues</p>
-            <p className="text-xl md:text-2xl font-bold text-red-600">{stats.critical}</p>
+        <div className="bg-white p-4 rounded-md border border-slate-200 flex flex-col gap-3 hover:bg-slate-50 transition-colors">
+          <div className="flex items-center gap-2 text-red-600">
+             <AlertTriangle size={16} />
+             <span className="text-sm font-medium">Critical Issues</span>
           </div>
-          <div className="p-2 md:p-3 bg-red-50 rounded-lg text-red-600 self-end md:self-auto">
-            <AlertTriangle size={20} className="md:w-6 md:h-6" />
-          </div>
+          <p className="text-3xl font-bold text-slate-800">{stats.critical}</p>
         </div>
 
-        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-          <div>
-            <p className="text-xs md:text-sm font-medium text-slate-500">Outdated Vers.</p>
-            <p className="text-xl md:text-2xl font-bold text-orange-600">{stats.outdated}</p>
+        <div className="bg-white p-4 rounded-md border border-slate-200 flex flex-col gap-3 hover:bg-slate-50 transition-colors">
+          <div className="flex items-center gap-2 text-orange-600">
+             <ShieldCheck size={16} />
+             <span className="text-sm font-medium">Outdated Vers.</span>
           </div>
-          <div className="p-2 md:p-3 bg-orange-50 rounded-lg text-orange-600 self-end md:self-auto">
-            <ShieldCheck size={20} className="md:w-6 md:h-6" />
-          </div>
+          <p className="text-3xl font-bold text-slate-800">{stats.outdated}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Charts */}
-        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100">
-          <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-4">Operating System Distribution</h3>
-          <div className="h-56 md:h-64">
+        <div className="bg-white p-6 rounded-md border border-slate-200">
+          <h3 className="text-base font-semibold text-slate-800 mb-6 flex items-center gap-2">
+            OS Distribution
+          </h3>
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -103,30 +98,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
                   innerRadius={60}
                   outerRadius={80}
                   fill="#8884d8"
-                  paddingAngle={5}
+                  paddingAngle={2}
                   dataKey="value"
                 >
                   {osData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip 
+                    contentStyle={{ borderRadius: '6px', border: '1px solid #E9E9E7', boxShadow: 'none' }}
+                />
                 <Legend iconType="circle" />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100">
-          <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-4">Device Status Overview</h3>
-           <div className="h-56 md:h-64">
+        <div className="bg-white p-6 rounded-md border border-slate-200">
+          <h3 className="text-base font-semibold text-slate-800 mb-6">Device Status Overview</h3>
+           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={statusData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{fontSize: 12}} />
-                <YAxis allowDecimals={false} tick={{fontSize: 12}} />
-                <Tooltip cursor={{fill: '#f1f5f9'}} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E9E9E7" />
+                <XAxis dataKey="name" tick={{fontSize: 12, fill: '#787774'}} axisLine={false} tickLine={false} dy={10} />
+                <YAxis allowDecimals={false} tick={{fontSize: 12, fill: '#787774'}} axisLine={false} tickLine={false} dx={-10} />
+                <Tooltip 
+                    cursor={{fill: '#F7F7F5'}} 
+                    contentStyle={{ borderRadius: '6px', border: '1px solid #E9E9E7', boxShadow: 'none' }}
+                />
+                <Bar dataKey="value" radius={[2, 2, 0, 0]}>
                   {statusData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#cbd5e1'} />
                   ))}

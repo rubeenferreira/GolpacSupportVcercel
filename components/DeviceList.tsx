@@ -270,7 +270,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
     };
 
     return (
-        <div className="bg-slate-50 p-4 md:p-6 border-t border-slate-100 shadow-inner animate-in slide-in-from-top-2 duration-300">
+        <div className="bg-slate-50 p-4 md:p-6 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-4">
                     <div>
@@ -284,16 +284,16 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex items-center bg-white p-1 rounded-lg border border-slate-200">
+                    <div className="flex items-center bg-white p-1 rounded-md border border-slate-200">
                         <button
                             onClick={() => setActiveTab('overview')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'overview' ? 'bg-slate-100 text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${activeTab === 'overview' ? 'bg-slate-100 text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             Overview
                         </button>
                         <button
                             onClick={() => setActiveTab('videos')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${activeTab === 'videos' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center gap-2 ${activeTab === 'videos' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             <Video size={12} />
                             Recordings ({videos.length})
@@ -305,7 +305,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     {device.lastScreenshot && (
                          <button 
                             onClick={() => setShowScreenshot(true)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg border border-indigo-700 shadow-sm flex items-center gap-2 text-xs font-medium transition-all"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md border border-indigo-700 shadow-sm flex items-center gap-2 text-xs font-medium transition-all"
                          >
                              <ImageIcon size={14} />
                              View Screen
@@ -314,17 +314,17 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
 
                     <button 
                         onClick={() => setShowDebug(!showDebug)}
-                        className={`p-1.5 rounded-lg border transition-all duration-300 ${showDebug || missingPayload ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'}`}
+                        className={`p-1.5 rounded-md border transition-all duration-300 ${showDebug || missingPayload ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'}`}
                         title="View Raw JSON Data"
                     >
                         {missingPayload ? <AlertTriangle size={16} className="text-yellow-500" /> : <Bug size={16} />}
                     </button>
 
-                    <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-2 bg-white p-1.5 rounded-md border border-slate-200">
                         <button 
                             onClick={handleRefresh}
                             disabled={isRefreshing}
-                            className={`p-1.5 rounded-md transition-all duration-300 ${isRefreshing ? 'text-brand-500 rotate-180' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-50'}`}
+                            className={`p-1.5 rounded transition-all duration-300 ${isRefreshing ? 'text-brand-500 rotate-180' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-50'}`}
                         >
                             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
                         </button>
@@ -332,7 +332,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                         <button 
                             onClick={handleResetAnalytics}
                             disabled={isRefreshing}
-                            className={`p-1.5 rounded-md transition-all duration-300 text-slate-400 hover:text-red-500 hover:bg-red-50`}
+                            className={`p-1.5 rounded transition-all duration-300 text-slate-400 hover:text-red-500 hover:bg-red-50`}
                             title="Reset Analytics Data"
                         >
                             <RotateCcw size={16} />
@@ -344,7 +344,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             {/* Screenshot Modal */}
             {showScreenshot && device.lastScreenshot && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowScreenshot(false)}>
-                    <div className="bg-slate-900 p-2 rounded-xl max-w-5xl w-full max-h-[90vh] flex flex-col relative" onClick={e => e.stopPropagation()}>
+                    <div className="bg-slate-900 p-2 rounded-lg max-w-5xl w-full max-h-[90vh] flex flex-col relative" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center px-2 py-2 mb-2 text-white">
                             <div>
                                 <h3 className="font-bold text-sm">{device.hostname} - Screen Capture</h3>
@@ -354,7 +354,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                 <X size={20} />
                             </button>
                         </div>
-                        <div className="flex-1 overflow-auto rounded-lg bg-black border border-slate-700 flex items-center justify-center">
+                        <div className="flex-1 overflow-auto rounded bg-black border border-slate-700 flex items-center justify-center">
                             <img 
                                 src={`data:image/png;base64,${device.lastScreenshot}`} 
                                 alt="Screen Capture" 
@@ -369,7 +369,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             {playingVideo && (
                 <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex items-center justify-center p-0 md:p-6" onClick={() => setPlayingVideo(null)}>
                     <div 
-                        className="w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl bg-black md:rounded-2xl overflow-hidden shadow-2xl flex flex-col relative" 
+                        className="w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl bg-black md:rounded-lg overflow-hidden shadow-2xl flex flex-col relative" 
                         onClick={e => e.stopPropagation()}
                     >
                          {/* Header (Mobile) / Close Button */}
@@ -410,7 +410,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                     href={playingVideo.url} 
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors flex items-center gap-2"
+                                    className="px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors flex items-center gap-2"
                                  >
                                      <ExternalLink size={14} />
                                      New Tab
@@ -418,7 +418,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                  <a 
                                     href={playingVideo.url} 
                                     download 
-                                    className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white transition-colors flex items-center gap-2"
+                                    className="px-5 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white transition-colors flex items-center gap-2"
                                  >
                                      <Download size={14} />
                                      Download
@@ -430,7 +430,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             )}
 
             {(showDebug || missingPayload) && (
-                <div className="mb-6 bg-slate-900 rounded-xl p-4 text-slate-300 border border-slate-700 shadow-inner overflow-hidden animate-in fade-in slide-in-from-top-2">
+                <div className="mb-6 bg-slate-900 rounded-lg p-4 text-slate-300 border border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center justify-between mb-2 border-b border-slate-700 pb-2">
                         <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
                             <Code size={14} />
@@ -457,7 +457,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
 
             {/* Content Switcher */}
             {activeTab === 'videos' ? (
-                <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-right-2">
+                <div className="bg-white p-4 md:p-5 rounded-lg border border-slate-200 animate-in fade-in slide-in-from-right-2">
                     <h4 className="font-semibold text-sm md:text-base text-slate-800 mb-4 flex items-center gap-2">
                         <Video size={18} className="text-indigo-500" />
                         Uploaded Recordings
@@ -465,7 +465,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     {videos.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {videos.map((vid, idx) => (
-                                <div key={idx} className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all group shadow-sm flex flex-col">
+                                <div key={idx} className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:border-indigo-300 transition-all group flex flex-col">
                                     {/* Thumbnail / Player Preview */}
                                     <div 
                                         className="aspect-video bg-black relative cursor-pointer group-hover:opacity-95 transition-opacity overflow-hidden"
@@ -505,7 +505,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                         <div className="flex items-center gap-2 pt-2 border-t border-slate-100 mt-1">
                                              <button 
                                                 onClick={() => setPlayingVideo(vid)}
-                                                className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-indigo-200 text-slate-600 text-xs py-1.5 rounded-lg transition-colors font-medium"
+                                                className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-indigo-200 text-slate-600 text-xs py-1.5 rounded-md transition-colors font-medium"
                                              >
                                                 <PlayCircle size={14} className="text-indigo-500"/>
                                                 Play
@@ -513,7 +513,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                                              <a 
                                                 href={vid.url} 
                                                 download 
-                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                                                 title="Download"
                                              >
                                                  <Download size={16} />
@@ -534,7 +534,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-left-2">
                     {/* App Usage */}
-                    <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="bg-white p-4 md:p-5 rounded-lg border border-slate-200">
                         <div className="flex justify-between items-center mb-4">
                             <h4 className="font-semibold text-sm md:text-base text-slate-800 flex items-center gap-2">
                                 <PieChartIcon size={18} className="text-purple-500" />
@@ -576,7 +576,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                             <div className="flex-1 w-full max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                                 <ul className="space-y-3">
                                     {apps.map((app, idx) => (
-                                        <li key={idx} className="flex items-center justify-between text-xs md:text-sm group hover:bg-slate-50 p-1 rounded-lg transition-colors">
+                                        <li key={idx} className="flex items-center justify-between text-xs md:text-sm group hover:bg-slate-50 p-1 rounded transition-colors">
                                             <div className="flex items-center gap-2 truncate">
                                                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: app.color }} />
                                                 <span className="font-medium truncate max-w-[100px] sm:max-w-none text-slate-700" title={app.name}>{app.name}</span>
@@ -603,7 +603,7 @@ const ExpandedDeviceView: React.FC<{ device: Device; onRefresh: () => Promise<vo
                     </div>
 
                     {/* Web Usage */}
-                    <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="bg-white p-4 md:p-5 rounded-lg border border-slate-200">
                         <h4 className="font-semibold text-sm md:text-base text-slate-800 mb-4 flex items-center gap-2">
                             <Globe size={18} className="text-blue-500" />
                             Most Viewed Websites
@@ -681,20 +681,20 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     return (
         <div className="space-y-4 pb-20 md:pb-0">
             {/* Search Bar */}
-            <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm sticky top-[72px] z-20 md:static">
+            <div className="flex items-center gap-2 bg-white p-3 rounded-lg border border-slate-200 sticky top-[60px] md:static z-20">
                  <Search className="text-slate-400" size={20} />
                  <input 
                     type="text"
                     placeholder="Search devices, users, or companies..."
-                    className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400"
+                    className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400 font-medium"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                  />
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {/* Desktop Header */}
-                <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     <div className="col-span-3">Device / User</div>
                     <div className="col-span-2">Status</div>
                     <div className="col-span-2">OS & Ver</div>
@@ -752,7 +752,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                                         ) : (
                                             <div className="relative group w-full max-w-[200px]">
                                                 <select 
-                                                    className="w-full appearance-none bg-white border border-slate-200 text-slate-700 text-xs rounded-lg py-1.5 pl-2 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer hover:border-slate-300"
+                                                    className="w-full appearance-none bg-white border border-slate-200 text-slate-700 text-xs rounded-md py-1.5 pl-2 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer hover:border-slate-300 transition-colors"
                                                     value={device.company || ''}
                                                     onChange={(e) => onAssignCompany(device.id, e.target.value)}
                                                 >
@@ -769,7 +769,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                                     <div className="col-span-2 flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
                                         <button 
                                             onClick={() => toggleExpand(device.id)}
-                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                                             title="View Analytics"
                                         >
                                             {expandedDeviceId === device.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -779,7 +779,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                                                 onClick={() => {
                                                     if(confirm('Delete this device?')) onDeleteDevice(device.id);
                                                 }}
-                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                                 title="Delete Device"
                                             >
                                                 <Trash2 size={18} />

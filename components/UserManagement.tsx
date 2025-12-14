@@ -109,14 +109,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             <div className="flex flex-wrap gap-2">
                  <button 
                     onClick={() => setIsCompanyModalOpen(true)}
-                    className="flex-1 sm:flex-none justify-center bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-all text-sm"
+                    className="flex-1 sm:flex-none justify-center bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-md flex items-center gap-2 font-medium transition-all text-sm"
                 >
                     <Briefcase size={16} />
                     Manage Groups
                 </button>
                 <button 
                     onClick={handleOpenCreate}
-                    className="flex-1 sm:flex-none justify-center bg-brand-600 hover:bg-brand-700 text-white px-3 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-all active:scale-95 text-sm"
+                    className="flex-1 sm:flex-none justify-center bg-brand-600 hover:bg-brand-700 text-white px-3 py-2 rounded-md flex items-center gap-2 font-medium transition-all active:scale-95 text-sm"
                 >
                     <Plus size={16} />
                     Create User
@@ -126,7 +126,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       </div>
 
       {/* Main Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
         
         {/* Filter Bar */}
         <div className="p-4 border-b border-slate-100 flex items-center gap-2">
@@ -134,7 +134,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
            <input 
              type="text" 
              placeholder="Search users or companies..." 
-             className="flex-1 text-sm outline-none placeholder:text-slate-400"
+             className="flex-1 text-sm outline-none placeholder:text-slate-400 font-medium"
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
            />
@@ -143,7 +143,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         {/* MOBILE CARD VIEW */}
         <div className="block md:hidden bg-slate-50/50 p-4 space-y-3">
              {filteredUsers.map(user => (
-                 <div key={user.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+                 <div key={user.id} className="bg-white border border-slate-200 rounded-lg p-4 flex items-center justify-between">
                      <div className="flex items-center gap-3">
                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
                             user.role === 'Admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
@@ -167,14 +167,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                      <div className="flex gap-1">
                         <button 
                             onClick={() => handleOpenEdit(user)}
-                            className="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-lg"
+                            className="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-md"
                         >
                             <Edit2 size={18} />
                         </button>
                         {isAdmin && (
                             <button 
                                 onClick={() => onDeleteUser(user.id)}
-                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md"
                             >
                                 <Trash2 size={18} />
                             </button>
@@ -192,10 +192,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4">User</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">Company Access</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4 font-semibold uppercase text-xs text-slate-500 tracking-wider">User</th>
+                <th className="px-6 py-4 font-semibold uppercase text-xs text-slate-500 tracking-wider">Role</th>
+                <th className="px-6 py-4 font-semibold uppercase text-xs text-slate-500 tracking-wider">Company Access</th>
+                <th className="px-6 py-4 text-right font-semibold uppercase text-xs text-slate-500 tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -233,7 +233,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     <div className="flex justify-end gap-2">
                         <button 
                             onClick={() => handleOpenEdit(user)}
-                            className="text-slate-400 hover:text-brand-600 p-2 rounded-full hover:bg-brand-50 transition-colors"
+                            className="text-slate-400 hover:text-brand-600 p-2 rounded hover:bg-brand-50 transition-colors"
                             title="Edit User & Password"
                         >
                             <Edit2 size={16} />
@@ -241,7 +241,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         {isAdmin && (
                             <button 
                                 onClick={() => onDeleteUser(user.id)}
-                                className="text-slate-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
+                                className="text-slate-400 hover:text-red-500 p-2 rounded hover:bg-red-50 transition-colors"
                                 title="Remove User"
                             >
                                 <Trash2 size={16} />
@@ -268,7 +268,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
           
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden border border-slate-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="text-lg font-bold text-slate-800">
                   {editingUserId ? 'Edit User' : 'Create New User'}
@@ -288,7 +288,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     type="text" 
                     required
                     readOnly={!isAdmin && !!editingUserId} // Prevent non-admins from changing username
-                    className={`w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 ${!isAdmin ? 'bg-slate-50 text-slate-500' : ''}`}
+                    className={`w-full px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 ${!isAdmin ? 'bg-slate-50 text-slate-500' : ''}`}
                     placeholder="jdoe"
                     value={formData.username}
                     onChange={e => setFormData({...formData, username: e.target.value})}
@@ -301,7 +301,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   <input 
                     type="text" 
                     required
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500"
                     placeholder={editingUserId ? "Enter new password to update" : "Temporary password"}
                     value={formData.password}
                     onChange={e => setFormData({...formData, password: e.target.value})}
@@ -318,7 +318,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, role: 'Admin'})}
-                      className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                      className={`px-4 py-2 rounded-md border text-sm font-medium transition-all ${
                         formData.role === 'Admin' 
                           ? 'bg-purple-50 border-purple-200 text-purple-700 ring-1 ring-purple-200' 
                           : 'border-slate-200 text-slate-600 hover:border-slate-300'
@@ -329,7 +329,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, role: 'User'})}
-                      className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                      className={`px-4 py-2 rounded-md border text-sm font-medium transition-all ${
                         formData.role === 'User' 
                           ? 'bg-blue-50 border-blue-200 text-blue-700 ring-1 ring-blue-200' 
                           : 'border-slate-200 text-slate-600 hover:border-slate-300'
@@ -339,7 +339,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     </button>
                   </div>
                 ) : (
-                    <div className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-lg text-slate-500 text-sm flex items-center justify-between">
+                    <div className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-md text-slate-500 text-sm flex items-center justify-between">
                         <span>{formData.role}</span>
                         <span className="text-xs italic text-slate-400">Restricted</span>
                     </div>
@@ -353,7 +353,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                      <div className="relative">
                         <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <select
-                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none bg-white"
+                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 appearance-none bg-white"
                           value={formData.company}
                           onChange={e => setFormData({...formData, company: e.target.value})}
                         >
@@ -363,7 +363,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         </select>
                      </div>
                  ) : (
-                    <div className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-lg text-slate-500 text-sm flex items-center gap-2">
+                    <div className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-md text-slate-500 text-sm flex items-center gap-2">
                         <Building2 size={16} />
                         <span>{formData.company}</span>
                         <span className="ml-auto text-xs italic text-slate-400">Restricted</span>
@@ -376,13 +376,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-md transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 shadow-sm transition-colors"
+                  className="flex-1 px-4 py-2 bg-brand-600 text-white font-medium rounded-md hover:bg-brand-700 transition-colors"
                 >
                   {editingUserId ? 'Update User' : 'Create User'}
                 </button>
@@ -397,7 +397,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       {isCompanyModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsCompanyModalOpen(false)} />
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[80vh]">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[80vh] border border-slate-200">
                   <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                       <h3 className="text-lg font-bold text-slate-800">Manage Companies</h3>
                       <button onClick={() => setIsCompanyModalOpen(false)} className="text-slate-400 hover:text-slate-600">
@@ -410,11 +410,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                           <input 
                               type="text" 
                               placeholder="Add new company..."
-                              className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                              className="flex-1 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500"
                               value={newCompany}
                               onChange={e => setNewCompany(e.target.value)}
                           />
-                          <button type="submit" disabled={!newCompany.trim()} className="bg-slate-800 text-white p-2 rounded-lg disabled:opacity-50">
+                          <button type="submit" disabled={!newCompany.trim()} className="bg-slate-800 text-white p-2 rounded-md disabled:opacity-50">
                               <Plus size={20} />
                           </button>
                       </form>
@@ -422,7 +422,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       <div className="space-y-2">
                           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Existing Companies</h4>
                           {companies.map(comp => (
-                              <div key={comp} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
+                              <div key={comp} className="flex items-center justify-between p-3 bg-slate-50 rounded-md border border-slate-100 group">
                                   <span className="font-medium text-slate-700">{comp}</span>
                                   <button 
                                     onClick={() => onDeleteCompany(comp)}
