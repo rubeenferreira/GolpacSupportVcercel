@@ -25,11 +25,11 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Determine API Base URL
-  // If we are on Vercel, we use relative paths ('') to hit our own API functions.
-  // If we are local (npm run dev), we point to the production Vercel backend to get real data.
-  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://golpac-support-vcercel.vercel.app'
-    : '';
+  // If we are strictly on the production domain, use relative paths.
+  // For ANY other environment (Localhost, Cloud IDEs, Vercel Previews), use the production backend.
+  const API_BASE = window.location.hostname === 'golpac-support-vcercel.vercel.app'
+    ? ''
+    : 'https://golpac-support-vcercel.vercel.app';
 
   // --- Session Management ---
 

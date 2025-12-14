@@ -6,18 +6,11 @@ export default async function handler(
   request: VercelRequest,
   response: VercelResponse
 ) {
-  // CORS Configuration
-  const reqOrigin = request.headers.origin;
+  // CORS Configuration: Allow all origins
+  const origin = request.headers.origin || '*';
   
-  if (reqOrigin) {
-      response.setHeader('Access-Control-Allow-Origin', reqOrigin);
-      response.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else {
-      // Server-to-server or CLI tool
-      response.setHeader('Access-Control-Allow-Origin', '*');
-      // No credentials for wildcard
-  }
-  
+  response.setHeader('Access-Control-Allow-Origin', origin);
+  response.setHeader('Access-Control-Allow-Credentials', 'true');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-install-token');
 

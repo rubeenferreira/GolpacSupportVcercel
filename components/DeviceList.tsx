@@ -769,20 +769,29 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                                     <div className="col-span-2 flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
                                         <button 
                                             onClick={() => toggleExpand(device.id)}
-                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-                                            title="View Analytics"
+                                            className={`
+                                                group flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all border
+                                                ${expandedDeviceId === device.id 
+                                                    ? 'bg-slate-100 text-slate-600 border-slate-200' 
+                                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-brand-600'
+                                                }
+                                            `}
                                         >
-                                            {expandedDeviceId === device.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                            <span>{expandedDeviceId === device.id ? 'Close' : 'Details'}</span>
+                                            {expandedDeviceId === device.id 
+                                                ? <ChevronUp size={14} className="text-slate-400 group-hover:text-slate-600"/> 
+                                                : <ChevronDown size={14} className="text-slate-400 group-hover:text-brand-600"/>
+                                            }
                                         </button>
                                         {!isReadOnly && (
                                             <button 
                                                 onClick={() => {
                                                     if(confirm('Delete this device?')) onDeleteDevice(device.id);
                                                 }}
-                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                                 title="Delete Device"
                                             >
-                                                <Trash2 size={18} />
+                                                <Trash2 size={16} />
                                             </button>
                                         )}
                                     </div>

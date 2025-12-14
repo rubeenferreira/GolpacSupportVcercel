@@ -7,16 +7,14 @@ export default async function handler(
   request: VercelRequest,
   response: VercelResponse
 ) {
-  // Dynamic CORS: Automatically allow the requesting origin if it's a Vercel app or Localhost
-  const origin = request.headers.origin;
-  const allowedOrigin = origin && (origin.endsWith('.vercel.app') || origin.includes('localhost')) 
-    ? origin 
-    : "https://golpac-support-vcercel.vercel.app"; // Fallback to production domain
-
-  response.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  // CORS Configuration: Allow all origins to support Cloud IDEs and Previews
+  // In a strict production environment, you might want to restrict this list.
+  const origin = request.headers.origin || '*';
+  
+  response.setHeader('Access-Control-Allow-Origin', origin);
   response.setHeader('Access-Control-Allow-Credentials', 'true');
   response.setHeader('Access-Control-Allow-Methods', 'GET, DELETE, PATCH, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (request.method === 'OPTIONS') return response.status(200).end();
 
