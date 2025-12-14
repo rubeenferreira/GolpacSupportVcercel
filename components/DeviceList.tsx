@@ -681,7 +681,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     return (
         <div className="space-y-4 pb-20 md:pb-0">
             {/* Search Bar */}
-            <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm sticky top-0 z-10 md:static">
+            <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm sticky top-[72px] z-20 md:static">
                  <Search className="text-slate-400" size={20} />
                  <input 
                     type="text"

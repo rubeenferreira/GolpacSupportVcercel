@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ViewState } from '../types';
 import { LayoutDashboard, Monitor, LogOut, Settings, Users, Shield } from 'lucide-react';
@@ -43,10 +44,10 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onChangeView, child
   const logoUrl = "https://static.wixstatic.com/media/297e13_91fceac09fe745458d11b50051949432~mv2.png/v1/fill/w_194,h_110,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/logo_footer.png";
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
+    <div className="flex flex-col md:flex-row bg-slate-50 font-sans min-h-screen md:h-screen md:overflow-hidden">
       {/* Sidebar (Desktop Only) */}
-      <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
-        <div className="p-6 border-b border-slate-100">
+      <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col h-full overflow-y-auto">
+        <div className="p-6 border-b border-slate-100 shrink-0">
            <div className="flex items-center gap-3">
              <div className="h-12 px-2 bg-brand-600 rounded-xl flex items-center justify-center shadow-sm overflow-hidden shrink-0">
                 <img src={logoUrl} alt="Golpac" className="h-full w-auto object-contain py-1" />
@@ -64,7 +65,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onChangeView, child
           <NavItem view="users" icon={Users} label="User Management" />
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-slate-100 shrink-0">
            <div className={`w-full flex items-center space-x-3 p-3 rounded-lg border transition-all duration-200 text-left bg-slate-50 border-slate-100`}>
              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold">
                {currentUser ? currentUser.charAt(0).toUpperCase() : 'A'}
@@ -86,9 +87,9 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onChangeView, child
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        {/* Mobile Top Header */}
-        <header className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between shrink-0 z-10 sticky top-0">
+      <main className="flex-1 flex flex-col relative w-full">
+        {/* Mobile Top Header - Sticky */}
+        <header className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between shrink-0 sticky top-0 z-30 shadow-sm">
            <div className="flex items-center gap-3">
                 <div className="h-8 px-2 bg-brand-600 rounded-lg flex items-center justify-center shrink-0 shadow-sm">
                      <img src={logoUrl} alt="Golpac" className="h-full w-auto object-contain py-1" />
@@ -105,14 +106,15 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onChangeView, child
         </header>
 
         {/* Content Area */}
-        {/* Added pb-24 to ensure content isn't hidden behind the bottom nav on mobile */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-24 md:pb-8">
+        {/* Mobile: Window scroll (natural flow), padding bottom for nav */}
+        {/* Desktop: Internal scroll container, fixed height */}
+        <div className="flex-1 p-4 md:p-8 pb-24 md:pb-8 md:overflow-y-auto md:h-full">
             <div className="max-w-7xl mx-auto h-full">
                 {children}
             </div>
         </div>
 
-        {/* Mobile Bottom Navigation */}
+        {/* Mobile Bottom Navigation - Fixed */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-2 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-center max-w-sm mx-auto gap-2">
             <MobileNavItem view="dashboard" icon={LayoutDashboard} label="Dashboard" />
